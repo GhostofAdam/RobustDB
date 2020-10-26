@@ -8,6 +8,7 @@ struct TableHead {
 };
 
 class Table{
+    friend class Database;
 public:
     void allocPage();
     RID_t getNext(RID_t rid);
@@ -15,8 +16,9 @@ public:
     void dropRecord(RID_t rid);
     int getRecordBytes();
 private:
-    TableHead head_;
-    string name_;
+    TableHead head;
+    string name;
+    bool ready;
     void create(string tableName);
     void open(string tableName);
     void close();
