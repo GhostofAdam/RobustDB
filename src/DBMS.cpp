@@ -1,7 +1,7 @@
-#include "DBMS.hpp"
+#include "../include/DBMS.hpp"
 
 DBMS::DBMS() {
-    this->cuccent = new Database();
+    current = new Database();
 }
 
 bool DBMS::requireDbOpen() {
@@ -24,8 +24,7 @@ void DBMS::switchToDB(const string name) {
 void DBMS::createTable(const table_def table) {
     if (!requireDbOpen())
         return;
-    assert(table->name != NULL);
-    Table *tab = current->createTable(table->name);
+    Table *tab = current->createTable(table.name);
 }
 
 void DBMS::dropDB(const string db_name) {

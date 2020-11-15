@@ -1,5 +1,6 @@
 #include "common.hpp"
 #include "setting.hpp"
+#include "bufmanager/BufPageManager.h"
 
 struct TableHead {
     int8_t columnTot, primaryCount, checkTot, foreignKeyTot;
@@ -17,7 +18,7 @@ public:
     int getRecordBytes();
 private:
     TableHead head;
-    string name;
+    string tableName;
     bool ready;
     void create(string tableName);
     void open(string tableName);

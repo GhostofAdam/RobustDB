@@ -1,7 +1,7 @@
 #include <cstring>
 #include <string>
 
-#include "Table.hpp"
+#include "../Table.hpp"
 
 Table::Table() {
     this->ready = false;

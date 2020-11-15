@@ -12,7 +12,11 @@ public:
     void close();
     void drop();
     void create(const string &name);
-    
+    Table *createTable(const string &name);
+    void dropTableByName(const string &name);
+    vector<string> getTableNames();
+    string getDBName();
+
 private:
     bool ready;
     string dbName;

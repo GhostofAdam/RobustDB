@@ -5,6 +5,7 @@
 #include <queue>
 #include <math.h>
 #include <cmath>
+#include <assert.h>
 
 using std::cout;
 using std::endl;
