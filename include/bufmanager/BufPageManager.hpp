@@ -103,6 +103,14 @@ public:
 		replace->access(index);
 		last = index;
 	}
+
+	char* _access(int index) {
+		if (index != last) {
+            replace->access(index);
+            last = index;
+        }
+        return getBuf(index);
+	}
 	/*
 	 * @函数名markDirty
 	 * @参数index:缓存页面数组中的下标，用来表示一个缓存页面

@@ -18,7 +18,10 @@ public:
         this.isNull = isNull;
     }
     int getRid() const { return this.rid; }
+    int getPermID() const { return this.permID; }
+    int getCol() const { return this.col; }
     int getFastCmp() const { return this.fastCmp; }
+    bool getIsNull() const { return this->isNull; }
     friend bool operator<(const IndexKey &a, const IndexKey &b);
 };
 

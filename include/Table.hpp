@@ -1,4 +1,5 @@
 #include "common.hpp"
+#include "Index.hpp"
 #include "bufmanager/BufPageManager.hpp"
 enum ColumnType {
     CT_INT, CT_VARCHAR, CT_FLOAT, CT_DATE
@@ -29,6 +30,7 @@ public:
 private:
     TableHead head;
     string tableName;
+    vector<Index> colIndex;
     int fileID, permID;
     char *buf;
     bool ready;
@@ -36,4 +38,9 @@ private:
     void open(const char* tableName);
     void close();
     void drop();
+    void loadIndex();
+    void storeIndex();
+    void dropIndex();
 };
+
+bool operator<(const IndexKey &a, const IndexKey &b);
