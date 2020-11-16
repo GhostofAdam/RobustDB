@@ -1,4 +1,4 @@
-#include "../include/DBMS.hpp"
+#include "DBMS.hpp"
 
 bool initMode = false;
 

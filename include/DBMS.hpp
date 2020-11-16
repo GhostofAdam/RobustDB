@@ -1,6 +1,5 @@
 #include "Database.hpp"
-#include "common.hpp"
-#include "./utils/type.h"
+#include "utils/type.hpp"
 
 class DBMS{
 public:

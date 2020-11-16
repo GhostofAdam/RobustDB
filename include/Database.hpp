@@ -1,8 +1,4 @@
-#include "common.hpp"
 #include "Table.hpp"
-
-using namespace std;
-
 class Database{
 public:
     Database();

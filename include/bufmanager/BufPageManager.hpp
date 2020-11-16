@@ -1,11 +1,8 @@
 #ifndef BUF_PAGE_MANAGER
 #define BUF_PAGE_MANAGER
-#include "../utils/MyHashMap.h"
-#include "../utils/MyBitMap.h"
-#include "FindReplace.h"
-#include "../utils/pagedef.h"
-#include "../fileio/FileManager.h"
-#include "../utils/MyLinkList.h"
+#include "FindReplace.hpp"
+#include "fileio/FileManager.hpp"
+#include "utils/MultiList.hpp"
 /*
  * BufPageManager
  * 实现了一个缓存的管理器
@@ -15,6 +12,7 @@ public:
 	int last;
 	FileManager* fileManager;
 	MyHashMap* hash;
+	MultiList *list;
 	FindReplace* replace;
 	//MyLinkList* bpl;
 	bool* dirty;
@@ -25,9 +23,12 @@ public:
 	BufType allocMem() {
 		return new unsigned int[(PAGE_SIZE >> 2)];
 	}
-	BufType fetchPage(int typeID, int pageID, int& index) {
+	BufType getBuf(int index){
+		return addr[index];
+	}
+	int fetchPage(int fileID, int pageID) {
 		BufType b;
-		index = replace->find();
+		int index = replace->find();
 		b = addr[index];
 		if (b == NULL) {
 			b = allocMem();
@@ -36,12 +37,13 @@ public:
 			if (dirty[index]) {
 				int k1, k2;
 				hash->getKeys(index, k1, k2);
-				fileManager->writePage(k1, k2, b, 0);
+				fileManager->writePage(k1, k2, b);
 				dirty[index] = false;
 			}
 		}
-		hash->replace(index, typeID, pageID);
-		return b;
+		list->insert(fileID, index);
+		hash->replace(index, fileID, pageID);
+		return index;
 	}
 public:
 	/*
@@ -57,12 +59,13 @@ public:
 	 * 注意:在调用函数allocPage之前，调用者必须确信(fileID,pageID)指定的文件页面不存在缓存中
 	 *           如果确信指定的文件页面不在缓存中，那么就不用在hash表中进行查找，直接调用替换算法，节省时间
 	 */
-	BufType allocPage(int fileID, int pageID, int& index, bool ifRead = false) {
-		BufType b = fetchPage(fileID, pageID, index);
+	int allocPage(int fileID, int pageID, bool ifRead = false) {
+		int index = fetchPage(fileID, pageID);
+		BufType b = getBuf(index);
 		if (ifRead) {
-			fileManager->readPage(fileID, pageID, b, 0);
+			fileManager->readPage(fileID, pageID, b);
 		}
-		return b;
+		return index;
 	}
 	/*
 	 * @函数名getPage
@@ -77,16 +80,16 @@ public:
 	 *           如果能找到，那么表示文件页面在缓存中
 	 *           如果没有找到，那么就利用替换算法获取一个页面
 	 */
-	BufType getPage(int fileID, int pageID, int& index) {
-		index = hash->findIndex(fileID, pageID);
+	int getPage(int fileID, int pageID) {
+		int index = hash->findIndex(fileID, pageID);
 		if (index != -1) {
 			access(index);
-			return addr[index];
 		} else {
-			BufType b = fetchPage(fileID, pageID, index);
-			fileManager->readPage(fileID, pageID, b, 0);
-			return b;
+			int index = fetchPage(fileID, pageID);
+			BufType b = getBuf(index);
+			fileManager->readPage(fileID, pageID, b);
 		}
+		return index;
 	}
 	/*
 	 * @函数名access
@@ -129,7 +132,7 @@ public:
 		if (dirty[index]) {
 			int f, p;
 			hash->getKeys(index, f, p);
-			fileManager->writePage(f, p, addr[index], 0);
+			fileManager->writePage(f, p, addr[index]);
 			dirty[index] = false;
 		}
 		replace->free(index);
@@ -157,20 +160,45 @@ public:
 	 * 构造函数
 	 * @参数fm:文件管理器，缓存管理器需要利用文件管理器与磁盘进行交互
 	 */
-	BufPageManager(FileManager* fm) {
+	BufPageManager() {
 		int c = CAP;
 		int m = MOD;
 		last = -1;
-		fileManager = fm;
-		//bpl = new MyLinkList(CAP, MAX_FILE_NUM);
+		fileManager = new FileManager();
 		dirty = new bool[CAP];
 		addr = new BufType[CAP];
 		hash = new MyHashMap(c, m);
+		list = new MultiList(CAP, MAX_FILE_NUM);
 	    replace = new FindReplace(c);
 		for (int i = 0; i < CAP; ++ i) {
 			dirty[i] = false;
 			addr[i] = NULL;
 		}
 	}
+    ~BufPageManager() {
+        delete replace;
+        delete hash;
+        delete list;
+        delete fileManager;
+        delete addr;
+    }
+	void closeFile(int fileID, bool ifWrite = true) {
+        int index;	
+        while (!list->isHead(index = list->getFirst(fileID))) {
+            if (ifWrite) {
+                writeBack(index);
+            } else {
+                release(index);
+            }
+        }
+    }
+	
+	static BufPageManager &getInstance() {
+        static BufPageManager instance;
+        return instance;
+    }
+	static FileManager &getFileManager() {
+        return *(getInstance().fileManager);
+    }
 };
 #endif

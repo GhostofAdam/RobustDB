@@ -1,11 +1,17 @@
 #ifndef PAGE_DEF
 #define PAGE_DEF
+#ifdef  _WIN64
+#include "unistd.h"
+#endif
+#ifdef _UNIX
 #include <unistd.h>
+#endif
 #include <errno.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "dirent.h"
+#include "utils/dirent.hpp"
+
 /*
  * 一个页面中的字节数
  */
@@ -52,6 +58,6 @@ typedef long long ll;
 typedef double db;
 typedef int INT;
 typedef int(cf)(uchar*, uchar*);
-int current = 0;
-int tt = 0;
+// int current = 0;
+// int tt = 0;
 #endif

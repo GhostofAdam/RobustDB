@@ -1,4 +1,4 @@
-#include "../common.hpp"
+#include "common.hpp"
 
 typedef struct linked_list {
     void *data;

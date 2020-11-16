@@ -1,7 +1,4 @@
-#include <fstream>
-#include <vector>
-
-#include "../Database.hpp"
+#include "Database.hpp"
 
 Database::Database() {
     this->ready = false;

@@ -1,8 +1,9 @@
 #ifndef BUF_SEARCH
 #define BUF_SEARCH
-#include "../utils/MyLinkList.h"
-#include "../utils/MyHashMap.h"
-#include "../utils/pagedef.h"
+#include "utils/MyLinkList.hpp"
+#include "utils/MyHashMap.hpp"
+#include "utils/pagedef.hpp"
+#include "common.hpp"
 //template <int CAP_>
 /*
  * FindReplace
@@ -50,6 +51,9 @@ public:
 		for (int i = 0; i < CAP_; ++ i) {
 			list->insert(0, i);
 		}
+	}
+	FindReplace() {
+		FindReplace(BUF_CAPACITY);
 	}
 };
 #endif

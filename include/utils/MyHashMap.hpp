@@ -1,7 +1,7 @@
 #ifndef MY_HASH_MAP
 #define MY_HASH_MAP
-#include "pagedef.h"
-#include "MyLinkList.h"
+#include "common.hpp"
+#include "MyLinkList.hpp"
 /*
  * hash表的键
  */
@@ -22,7 +22,7 @@ struct DataNode {
 class MyHashMap {
 private:
 	static const int A = 1;
-	static const int B = 1;
+	static const int B = 97;
 	int CAP_, MOD_;
 	MyLinkList* list;
 	DataNode* a;
@@ -94,7 +94,7 @@ public:
 	 * @参数c:hash表的容量上限
 	 * @参数m:hash函数的mod
 	 */
-	MyHashMap(int c, int m) {
+	MyHashMap(int c, int m = 48611) {
 		CAP_ = c;
 		MOD_ = m;
 		a = new DataNode[c];
