@@ -4,6 +4,7 @@ DBMS::DBMS() {
     current = new Database();
 }
 
+
 bool DBMS::requireDbOpen() {
     if (!this->current->isOpen()) {
         printf("%s\n", "Please USE database first!");
@@ -53,4 +54,36 @@ void DBMS::listTables() {
         printf("%s\n", table.c_str());
     }
     printf("==========\n");
+}
+
+void DBMS::createIndex(column_ref *tb_col) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(tb_col->table))) {
+        printf("Table %s not found\n", tb_col->table);
+        return;
+    }
+    int t = tb->getColumnID(tb_col->column);
+    if (t == -1) {
+        printf("Column %s not exist\n", tb_col->column);
+    } else
+        tb->createIndex(t);
+}
+void DBMS::dropIndex(column_ref *tb_col) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(tb_col->table))) {
+        printf("Table %s not found\n", tb_col->table);
+        return;
+    }
+    int t = tb->getColumnID(tb_col->column);
+    if (t == -1) {
+        printf("Column %s not exist\n", tb_col->column);
+    } else if (!tb->hasIndex(t)) {
+        printf("No index on %s(%s)\n", tb_col->table, tb_col->column);
+    } else {
+        tb->dropIndex(t);
+    }
 }

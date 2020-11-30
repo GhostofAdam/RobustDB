@@ -10,6 +10,7 @@
 #include <cmath>
 #include <assert.h>
 #include <map>
+#include <string.h>
 
 using std::cout;
 using std::endl;
@@ -22,6 +23,8 @@ using std::ofstream;
 using std::ios;
 using std::queue;
 using std::ceil;
+//----------------------PAGE------------------------------------------
+#define PAGE_FOOTER_SIZE 64
 //----------------------TABLE--------------------------------------
 #define MAX_COLUMN_SIZE 32
 // both table name and column name

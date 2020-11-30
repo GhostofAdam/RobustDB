@@ -18,3 +18,8 @@ typedef struct table_def {
     column_defs *columns;
     linked_list *constraints;
 } table_def;
+
+typedef struct column_ref {
+    char *table;
+    char *column;
+} column_ref;

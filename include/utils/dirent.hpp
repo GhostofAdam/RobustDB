@@ -25,8 +25,12 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #	define WIN32_LEAN_AND_MEAN
 #endif
+#ifdef  _WIN64
 #include <windows.h>
-
+#endif
+#ifdef __linux__ 
+#include <unistd.h>
+#endif
 #include <stdio.h>
 #include <stdarg.h>
 #include <wchar.h>
@@ -709,7 +713,7 @@ static int readdir_r(
 	 *
 	 * Be ware that the code below cannot come up with a short file name
 	 * unless the file system provides one.  At least VirtualBox shared
-	 * folders fail to do this.
+	 * folders fail to do this->
 	 */
 	if (error && datap->cAlternateFileName[0] != '\0') {
 		error = wcstombs_s(

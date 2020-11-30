@@ -2,12 +2,13 @@
 #define __FILE_MANAGER_H__
 
 #include "utils/pagedef.hpp"
+#include "common.hpp"
 #include <cstdio>
 #include <cassert>
 #ifdef  _WIN64
 #include "unistd.h"
 #endif
-#ifdef _UNIX
+#ifdef __linux__
 #include <unistd.h>
 #endif
 #include <fcntl.h>

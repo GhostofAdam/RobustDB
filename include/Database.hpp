@@ -12,10 +12,12 @@ public:
     void dropTableByName(const string &name);
     vector<string> getTableNames();
     string getDBName();
+    Table *getTableByName(const std::string &name);
 
 private:
     bool ready;
     string dbName;
     vector<string> tableName;
     vector<Table*> table;
+    size_t tableSize;
 };

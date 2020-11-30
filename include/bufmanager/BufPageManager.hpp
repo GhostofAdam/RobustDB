@@ -104,7 +104,7 @@ public:
 		last = index;
 	}
 
-	char* _access(int index) {
+	BufType _access(int index) {
 		if (index != last) {
             replace->access(index);
             last = index;

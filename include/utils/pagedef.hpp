@@ -2,15 +2,16 @@
 #define PAGE_DEF
 #ifdef  _WIN64
 #include "unistd.h"
+#include "utils/dirent.hpp"
 #endif
-#ifdef _UNIX
+#ifdef __linux__
 #include <unistd.h>
 #endif
 #include <errno.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "utils/dirent.hpp"
+
 
 /*
  * 一个页面中的字节数

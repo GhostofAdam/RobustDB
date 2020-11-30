@@ -1,4 +1,4 @@
-#include "include/Index.hpp"
+#include "Index.hpp"
 #include "RegisterManager.hpp"
 
 string Index::getFilename(int tab, int col) {
@@ -8,31 +8,31 @@ string Index::getFilename(int tab, int col) {
 }
 
 void Index::clear() {
-    this.list.clear();
-    this.iter = this.list.begin();
+    this->list.clear();
+    this->iter = this->list.begin();
 }
 
-void Index::load(int table, int col) {
-    ifstream stm(genFilename(tab, col).c_str());
-    this.list.restore(stm);
+void Index::load(int tab, int col) {
+    ifstream stm(getFilename(tab, col).c_str());
+    this->list.restore(stm);
 } 
 
-void Index::store(int table, int col) {
-    ofstream stm(genFilename(tab, col).c_str());
-    this.list.dump(stm);
+void Index::store(int tab, int col) {
+    ofstream stm(getFilename(tab, col).c_str());
+    this->list.dump(stm);
 }
 
-void Index::drop(int table, int col) {
-    remove(genFilename(tab, col).c_str());
+void Index::drop(int tab, int col) {
+    remove(getFilename(tab, col).c_str());
 }
 
 void Index::erase(const IndexKey &key) {
-    assert(this.list.erase(key) == 1);
+    assert(this->list.erase(key) == 1);
 }
 
 void Index::insert(const IndexKey &key) {
-    assert(this.list.find(key) == this.list.end());
-    this.list.insert(key);
+    assert(this->list.find(key) == this->list.end());
+    this->list.insert(key);
 }
 
 int Index::begin() {
