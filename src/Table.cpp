@@ -55,7 +55,8 @@ void Table::open(const char* tableName) {
     this->permID = BufPageManager::getFileManager().getFilePermID(fileID);
     RegisterManager::getInstance().checkIn(permID, this);
     int index = BufPageManager::getInstance().getPage(fileID, 0);
-    memcpy(&head, BufPageManager::getInstance()._access(index), sizeof(TableHead));
+    memcpy(&head, BufPageManager::getInstance().getBuf(index), sizeof(TableHead));
+    BufPageManager::getInstance().access(index)
     this->ready = true;
     this->buf = nullptr;
     for (auto &col: this->colIndex)
@@ -67,7 +68,8 @@ void Table::close() {
     assert(this->ready);
     storeIndex();
     int index = BufPageManager::getInstance().getPage(fileID, 0);
-    memcpy(BufPageManager::getInstance()._access(index), &head, sizeof(TableHead));
+    memcpy(BufPageManager::getInstance().getBuf(index), &head, sizeof(TableHead));
+    BufPageManager::getInstance().access(index)
     BufPageManager::getInstance().markDirty(index);
     RegisterManager::getInstance().checkOut(permID);
     BufPageManager::getInstance().closeFile(fileID);
@@ -106,7 +108,8 @@ char *Table::getRecordTempPtr(RID_t rid) {
     int offset = rid % PAGE_SIZE;
     assert(1 <= pageID && pageID < head.pageTot);
     auto index = BufPageManager::getInstance().getPage(fileID, pageID);
-    char* page = (char *)BufPageManager::getInstance()._access(index);
+    char* page = (char *)BufPageManager::getInstance().getBuf(index);
+    BufPageManager::getInstance().access(index);
     assert(getFooter(page, offset / head.recordByte));
     return page + offset;
 }
