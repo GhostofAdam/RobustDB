@@ -26,11 +26,12 @@ void execute_create_idx(struct column_ref *tb_col);
 
 void execute_add_column(const char *tb_name, struct column_defs *col_def);
 void execute_drop_column(const char *tb_name, struct column_ref *tb_col);
-void execute_rename_column(struct column_ref *old_col, struct column_ref *new_col)
-void execute_add_primary_key();
-void execute_drop_primary_key();
-void execute_add_foreign_key();
-void execute_drop_foreign_key();
+void execute_rename_column(const char *old_col, const char *new_col);
+void execute_add_primary_key(const char *table_name);
+void execute_add_constraint(const char *table_name, const char * cons_name, table_constraint* cons);
+void execute_drop_primary_key_byname(const char *table_name, const char *pk_name);
+void execute_drop_primary_key(const char *table_name);
+void execute_drop_foreign_key(const char *table_name);
 
 #ifdef __cplusplus
 }

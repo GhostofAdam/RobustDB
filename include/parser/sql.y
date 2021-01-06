@@ -88,7 +88,7 @@ stmt: create_db_stmt ';' {execute_create_db($1);}
 
         | create_idx_stmt ';' {execute_create_idx($1);}
         | drop_idx_stmt ';' {execute_drop_idx($1);}
-       
+
         | alterStmt ';' {}
         
         | EXIT ';' {execute_sql_eof(); exit(0);}
@@ -171,6 +171,12 @@ drop_idx_stmt: DROP INDEX IDENTIFIER{
                 $$->index_name=$6;
                 $$->table=$3;
                 }
+                | ALTER TABLE IDENTIFIER ADD INDEX IDENTIFIER’(’<column_name_list>’)’{
+
+                }
+                | ALTER TABLE IDENTIFIER DROP INDEX IDENTIFIER{
+
+                }
                 ;
 
 alterStmt := ALTER TABLE IDENTIFIER ADD column_dec{ execute_add_column($3,$5); }
@@ -182,22 +188,22 @@ alterStmt := ALTER TABLE IDENTIFIER ADD column_dec{ execute_add_column($3,$5); }
             execute_drop_column(temp,$5);
         }
 		| ALTER TABLE IDENTIFIER RENAME TO IDENTIFIER{
+            execute_rename_column($3, $6);
 
         }
 		| ALTER TABLE IDENTIFIER DROP PRIMARY KEY{
-
+            execute_drop_primary_key($3);
         }
-		| ALTER TABLE IDENTIFIER ADD CONSTRAINT IDENTIFIER PRIMARY KEY '(' columnList ')' {
-
+		| ALTER TABLE IDENTIFIER ADD CONSTRAINT IDENTIFIER tb_opt_dec {
+            execute_add_constraint($3, $6, $7);
         }
+        
 		| ALTER TABLE IDENTIFIER DROP PRIMARY KEY IDENTIFIER{
-
-        }
-		| ALTER TABLE IDENTIFIER ADD CONSTRAINT IDENTIFIER FOREIGN KEY '(' columnList ')' REFERENCES IDENTIFIER '(' columnList ')'{
-
-        }
+            execute_drop_primary_key_byname($3, $7);
+        }   
+		
 		| ALTER TABLE IDENTIFIER DROP FOREIGN KEY IDENTIFIER{
-
+            execute_drop_foreign_key($3, $7);
         }
 
 fieldList: column_dec {$$ = $1}
@@ -253,24 +259,14 @@ where_clause: WHERE condition_expr {$$=$2;}
             ;
 
 column_type: INT   {$$=COLUMN_TYPE_INT;}
-            | CHAR  {$$=COLUMN_TYPE_VARCHAR;}
             | VARCHAR  {$$=COLUMN_TYPE_VARCHAR;}
             | FLOAT {$$=COLUMN_TYPE_FLOAT;}
-            | DOUBLE {$$=COLUMN_TYPE_FLOAT;fprintf(stderr, "Warning: type double is decayed to float.\n");}
             | DATE {$$=COLUMN_TYPE_DATE;}
             ;
 
-table_refs: table_join {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
-            | table_refs ',' table_join {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
+table_refs: table_name {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
+            | table_refs ',' table_name {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
             ;
-
-table_join: table_name {$$ = $1; /*TODO*/}
-            | table_join JOIN table_name join_cond {$$ = $1;/*TODO*/}
-            ;
-
-join_cond: ON condition_expr
-        |
-        ;
 
 value_list:  '(' expr_list ')' {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$2;}
            | value_list ','  '(' expr_list ')'  {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$4;$$->next=$1;}
@@ -280,27 +276,7 @@ expr_list:  expr {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
            | expr_list ','  expr  {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
            ;
 
-select_expr_list:  expr {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
-          | aggregate {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
-          | select_expr_list ','  aggregate  {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
-          | select_expr_list ','  expr  {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
-          ;
-
-aggregate: SUM '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_SUM;}
-        | AVG '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_AVG;}
-        | MIN '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_MIN;}
-        | MAX '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_MAX;}
-        | COUNT '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_COUNT;}
-        | COUNT '(' '*' ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=NULL;$$->op=OPER_COUNT;}
-        ;
-
-aggregate_term: column_ref {
-                        $$=(expr_node*)calloc(1,sizeof(expr_node));
-                        $$->op=OPER_NONE;
-                        $$->node_type=TERM_COLUMN;
-                        $$->column=$1;
-                    }
-                ;
+select_expr_list:  col[, col]*{}
 
 table_columns: table_name {$$=(insert_argu*)calloc(1,sizeof(insert_argu));$$->table=$1;}
             | table_name '(' column_list ')' {$$=(insert_argu*)calloc(1,sizeof(insert_argu));$$->table=$1;$$->columns=$3;}
@@ -323,34 +299,14 @@ logic_op: AND { $$ = OPER_AND; }
         | OR { $$ = OPER_OR; }
         ;
 
-condition_term: expr compare_op expr {
+condition_term: col compare_op col {
                 $$=(expr_node*)calloc(1,sizeof(expr_node));
                 $$->left=$1;
                 $$->right=$3;
                 $$->op=$2;
             }
-            | expr IN '(' expr_list ')'
-            | expr IS TOKEN_NULL {
-                $$=(expr_node*)calloc(1,sizeof(expr_node));
-                $$->left=$1;
-                $$->op=OPER_ISNULL;
-            }
-            | '(' condition_expr ')' {$$=$2;}
-            | NOT condition_term {
-                $$=(expr_node*)calloc(1,sizeof(expr_node));
-                $$->left=$2;
-                $$->op=OPER_NOT;
-            }
-            | TRUE {
-                $$=(expr_node*)calloc(1,sizeof(expr_node));
-                $$->literal_b=1;
-                $$->node_type=TERM_BOOL;
-            }
-            | FALSE {
-                $$=(expr_node*)calloc(1,sizeof(expr_node));
-                $$->literal_b=0;
-                $$->node_type=TERM_BOOL;
-            }
+            | col IS NULL{}
+            | col IS NOT NULL{}
             ;
 
 compare_op: '=' {$$ = OPER_EQU;}
@@ -428,10 +384,14 @@ term: column_ref {
         }
     | '(' expr ')' {$$ = $2;}
     ;
+column_name_list: IDENTIFIER, column_name_list{ temp=(linked_list*)calloc(1,sizeof(linked_list));$$->data = temp; $3->next = temp; $$ = $3}
+    | IDENTIFIER{$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data = $1; $$->next = null;}
 
 column_ref: IDENTIFIER {$$=(column_ref*)calloc(1,sizeof(column_ref));$$->table = NULL; $$->column = $1;};
     | table_name '.' IDENTIFIER {$$=(column_ref*)calloc(1,sizeof(column_ref));$$->table = $1; $$->column = $3; };
     ;
+
+col: [table_name'.']column_name{ }
 
 table_name: IDENTIFIER {$$ = $1;}
         ;
