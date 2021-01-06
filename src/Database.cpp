@@ -105,3 +105,47 @@ Table *Database::getTableByName(const std::string &name) {
 vector<string> Database::getTableNames() {
     return tableName;
 }
+
+bool Database::setPrimaryKey(Table* tab, const char* column_name){
+    bool succeed = true;
+    int t = tab->getColumnID(column_name);
+    if (t == -1) {
+        printf("Primary key constraint: Column %s does not exist\n", column_name);
+        return false;
+    }
+    tab->createIndex(t);
+    tab->setPrimary(t);
+    return true;
+}
+bool Database::setForeignKey(Table* tab, const char* column_name, const char* foreign_table_name, const char* foreign_column_name){
+    int t = tab->getColumnID(column_name);
+    if (t == -1) {
+        printf("Foreign key constraint: Column %s does not exist\n", column_name);
+        return false;
+    }
+    if (tab->getColumnType(t) != CT_INT) {
+        printf("Foreign key constraint: Column %s must be int.\n", column_name);
+        return false;
+    }
+    auto foreign_table = getTableByName(foreign_table_name);
+    if (foreign_table == nullptr) {
+        printf("Foreign key constraint: Foreign table %s does not exist\n", foreign_table_name);
+        return false;
+    }
+    auto foreign_col = foreign_table->getColumnID(foreign_column_name);
+    if (foreign_col == -1) {
+        printf("Foreign key constraint: Foreign column %s does not exist\n", foreign_column_name);
+        return false;
+    }
+    if (tab->getColumnType(t) != foreign_table->getColumnType(foreign_col)) {
+        printf("Foreign key constraint: Type of foreign column %s does not match %s\n",
+                foreign_column_name, column_name);
+        return false;
+    }
+    if (!foreign_table->hasIndex(foreign_col)) {
+        printf("Foreign key constraint: Foreign column %s must be indexed.\n", foreign_column_name);
+        return false;
+    }
+    tab->addForeignKeyConstraint(t, (int) foreign_table->permID, foreign_col);
+    return true;
+}

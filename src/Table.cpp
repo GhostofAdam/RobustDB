@@ -228,3 +228,19 @@ bool operator<(const IndexKey &a, const IndexKey &b) {
     if (res > 0) return false;
     return a.rid < b.rid;
 }
+
+void Table::dropRecord(RID_t rid) {
+    int pageID = rid / PAGE_SIZE;
+    int offset = rid % PAGE_SIZE;
+    for (int i = 0; i < head.columnTot; i++) {
+        if (head.hasIndex & (1 << i)) eraseColIndex(rid, i);
+    }
+    int index = BufPageManager::getInstance().getPage(fileID, pageID);
+    char *page = BufPageManager::getInstance().access(index);
+    char *record = page + offset;
+    unsigned int &next = *(unsigned int *) record;
+    next = head.nextAvail;
+    head.nextAvail = rid;
+    inverseFooter(page, offset / head.recordByte);
+    BufPageManager::getInstance().markDirty(index);
+}
