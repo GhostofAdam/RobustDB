@@ -40,8 +40,8 @@ public:
     ~Table();
     char *select(RID_t rid, int col);
     int getFooter(char *page, int idx);
-    bool addColumn(const char *name, ColumnType type, int size,
-                  bool notNull, bool hasDefault, const char *data);
+    // return -1 if failed, otherwise column id
+    int addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, const char *data);
     // return -1 if not found
     int getColumnID(const char *name);
     void setPrimary(int col);
@@ -51,6 +51,7 @@ public:
     bool hasIndex(int col){return (head.hasIndex & (1 << col)) != 0;}
     int getColumnCount(){return head.columnTot;}
     void dropRecord(RID_t rid);
+    void printTableDef();
 private:
     TableHead head;
     string tableName;
