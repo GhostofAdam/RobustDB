@@ -290,8 +290,7 @@ expr_node *DBMS::findJoinCondition(expr_node *condition) {
     return cond;
 }
 
-bool
-DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, CallbackFunc callback) {
+bool DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, CallbackFunc callback) {
     RID_t rid_a = (RID_t) -1, rid_l_a;
     int col_a;
     RID_t rid_b = (RID_t) -1, rid_l_b;
@@ -391,7 +390,6 @@ useIndex(a, b);
     index_b:
 useIndex(b, a);
 }
-
 
 void DBMS::iterateRecords(Table *tb, expr_node *condition, CallbackFunc callback) {
     RID_t rid = (RID_t) -1, rid_u;
@@ -781,6 +779,19 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
         next_rec:;
     }
     printf("%d rows inserted.\n", count);
+}
+
+void DBMS::addColumn(const char *table, struct column_defs *col_def) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(table))) {
+        printf("Table %s not found\n", table);
+        return;
+    }
+    while (col_def != nullptr) {
+        col_def = col_def->next;
+    }
 }
 
 void DBMS::createIndex(column_ref *tb_col) {

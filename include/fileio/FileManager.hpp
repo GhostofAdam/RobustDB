@@ -29,7 +29,7 @@ class FileManager {
 
     FileManager() {
         idStackTop = 0;
-        for (int i = MAX_FILE_NUM - 1; i >= 0; i--) {
+        for (int i = MAX_FILE_NUM - 1; i >= 0; i--) {   // idStack[0] = 127; idStack[127] = 0; idStackTop = 128
             idStack[idStackTop++] = i;
         }
         memset(isOpen, 0, sizeof(isOpen));
@@ -67,16 +67,28 @@ public:
         assert(0 <= fileID && fileID < MAX_FILE_NUM && isOpen[fileID]);
         int file = fileList[fileID];
         off_t offset = pageID;
-        offset <<= PAGE_SIZE_IDX;
-        assert(lseek(file, offset, SEEK_SET) == offset);
-        assert(read(file, (void *) buf, PAGE_SIZE) == PAGE_SIZE);
+        offset <<= PAGE_SIZE_IDX;   // 8192 * pageID
+        assert(lseek(file, offset, SEEK_SET) == offset);    // SEEK_SET表示参数offset即为新的读写位置，lseek返回目前的读写位置
+        assert(read(file, (void *) buf, PAGE_SIZE) == PAGE_SIZE);   // read返回读取到的字节数
     }
 
     void createFile(const char *name) {
         FILE *file = fopen(name, "a+");
         assert(file);
         fclose(file);
-        permID[name] = nextID++;
+        permID[name] = nextID++;    // 创建唯一的permID
+    }
+
+    int openFile(const char *name) {
+        assert(idStackTop);
+        int fileID = idStack[--idStackTop];
+        isOpen[fileID] = 1;
+        filePermID[fileID] = permID[name];
+        perm2temp[filePermID[fileID]] = fileID;
+        int file = open(name, O_RDWR);
+        assert(file != -1);
+        fileList[fileID] = file;
+        return fileID;
     }
 
     void closeFile(int fileID) {
@@ -95,18 +107,6 @@ public:
     //     idStack[idStackTop++] = i;
     //   }
     // }
-
-    int openFile(const char *name) {
-        assert(idStackTop);
-        int fileID = idStack[--idStackTop];
-        isOpen[fileID] = 1;
-        filePermID[fileID] = permID[name];
-        perm2temp[filePermID[fileID]] = fileID;
-        int file = open(name, O_RDWR);
-        assert(file != -1);
-        fileList[fileID] = file;
-        return fileID;
-    }
 
     int getFilePermID(int fileID) {
         assert(isOpen[fileID]);

@@ -34,9 +34,9 @@ private:
 
 public:
     void clear();   // 清空树
-    void load(int table, int col);    // 加载对应表格对应行
-    void store(int table, int col);   // 存储对应表格对应行
-    void drop(int table, int col);    // 删除对应表格对应行
+    void load(int table, int col);    // 加载对应表格对应列
+    void store(int table, int col);   // 存储对应表格对应列
+    void drop(int table, int col);    // 删除对应表格对应列
     void erase(const IndexKey &key);    // 删除指定值
     void insert(const IndexKey &key);   // 插入行
     int begin();    // 获取首元素rid

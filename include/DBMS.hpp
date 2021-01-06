@@ -18,6 +18,7 @@ public:
     void updateRow(const char *table, expr_node *condition, column_ref *column, expr_node *eval);
     void deleteRow(const char *table, expr_node *condition);
     void insertRow(const char *table, const linked_list *columns, const linked_list *values);
+    void addColumn(const char *table, struct column_defs *col_def);
     void createIndex(column_ref *tb_col);
     void dropIndex(column_ref *tb_col);
     void descTable(const char *name);
