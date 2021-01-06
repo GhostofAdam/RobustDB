@@ -95,7 +95,7 @@ void Database::dropTableByName(const std::string &name) {
     tableName.back() = "";
     remove((dbName + "." + name + ".table").c_str());
 }
-Table *Database::getTableByName(const std::string &name) {
+Table *Database::getTableByName(const char* &name) {
     for (size_t i = 0; i < tableSize; i++)
         if (tableName[i] == name) {
             return table[i];

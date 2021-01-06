@@ -244,3 +244,43 @@ void Table::dropRecord(RID_t rid) {
     inverseFooter(page, offset / head.recordByte);
     BufPageManager::getInstance().markDirty(index);
 }
+
+int64_t Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, const char *data){
+    printf("adding %s %d\n", name, type);
+    for (int i = 0; i < head.columnTot; i++)
+        if (strcmp(head.columnName[i], name) == 0)
+            return -1;
+    assert(head.columnTot < MAX_COLUMN_SIZE);
+    int id = head.columnTot++;
+    strcpy(head.columnName[id], name);
+    head.columnType[id] = type;
+    head.columnOffset[id] = head.recordByte;
+    head.columnLen[id] = 0;
+    head.defaultOffset[id] = -1;
+    switch (type) {
+        case CT_INT:
+        case CT_FLOAT:
+        case CT_DATE:
+            head.recordByte += 4;
+            if (hasDefault) {
+                head.defaultOffset[id] = head.dataArrUsed;
+                memcpy(head.dataArr + head.dataArrUsed, data, 4);
+                head.dataArrUsed += 4;
+            }
+            break;
+        case CT_VARCHAR:
+            head.recordByte += MAX_NAME_LEN + 1;
+            head.recordByte += 4 - head.recordByte % 4;
+            if (hasDefault) {
+                head.defaultOffset[id] = head.dataArrUsed;
+                strcpy(head.dataArr + head.dataArrUsed, data);
+                head.dataArrUsed += strlen(data) + 1;
+            }
+            break;
+        default:
+            assert(0);
+    }
+    assert(head.dataArrUsed <= MAX_DATA_SIZE);
+    assert(head.recordByte <= PAGE_SIZE);
+    return id;
+}

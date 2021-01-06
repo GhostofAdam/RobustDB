@@ -13,7 +13,7 @@ public:
     void dropDB(const char *db_name);
     void createTable(const table_def *table);
     void dropTable(const char *table);
-    void listTables();
+    void showTables();
     void selectRow(const linked_list *tables, const linked_list *column_expr, expr_node *condition);
     void updateRow(const char *table, expr_node *condition, column_ref *column, expr_node *eval);
     void deleteRow(const char *table, expr_node *condition);

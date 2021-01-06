@@ -62,7 +62,7 @@ void execute_desc_tables(const char *table_name) {
 }
 
 void execute_show_tables() {
-    DBMS::getInstance()->listTables();
+    DBMS::getInstance()->showTables();
 }
 
 void execute_create_db(const char *db_name) {
@@ -164,7 +164,7 @@ void execute_sql_eof() {
 }
 
 void execute_add_column(const char *tb_name, struct column_defs *col_def){
-    
+
 }
 void execute_drop_column(const char *tb_name, struct column_ref *tb_col){
 
