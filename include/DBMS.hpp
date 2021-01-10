@@ -19,6 +19,7 @@ public:
     void deleteRow(const char *table, expr_node *condition);
     void insertRow(const char *table, const linked_list *columns, const linked_list *values);
     void addColumn(const char *table, struct column_defs *col_def);
+    void dropColumn(const char *table, struct columndef *tb_col);
     void createIndex(column_ref *tb_col);
     void dropIndex(column_ref *tb_col);
     void descTable(const char *name);
@@ -48,4 +49,5 @@ private:
     void iterateRecords(linked_list *tables, expr_node *condition, CallbackFunc callback);
     void iterateRecords(Table *tb, expr_node *condition, CallbackFunc callback);
     void freeLinkedList(linked_list *t);
+    int isAggregate(const linked_list *column_expr);
 };

@@ -11,33 +11,33 @@ struct BufPageManager {
 public:
 	int last;
 	FileManager* fileManager;
-	MyHashMap* hash;
+	MyHashMap* hash;	// 缓存
 	MultiList *list;
 	FindReplace* replace;
 	//MyLinkList* bpl;
-	bool* dirty;
+	bool* dirty;		// 脏页数组
 	/*
 	 * 缓存页面数组
 	 */
-	BufType* addr;
+	BufType* addr;		// 缓存页面数组 unsigned int*
 	BufType allocMem() {
-		return new unsigned int[(PAGE_SIZE >> 2)];
+		return new unsigned int[(PAGE_SIZE >> 2)];	// 2KB
 	}
-	BufType getBuf(int index){
+	BufType getBuf(int index) {
 		return addr[index];
 	}
 	int fetchPage(int fileID, int pageID) {
 		BufType b;
-		int index = replace->find();
+		int index = replace->find();	// 缓存页面数组中要被替换页面的下标
 		b = addr[index];
 		if (b == NULL) {
-			b = allocMem();
+			b = allocMem();	// 指向2KB unsigned int数组
 			addr[index] = b;
 		} else {
 			if (dirty[index]) {
 				int k1, k2;
-				hash->getKeys(index, k1, k2);
-				fileManager->writePage(k1, k2, b);
+				hash->getKeys(index, k1, k2);	// hash表的k1、k2两个键
+				fileManager->writePage(k1, k2, b);	// 更新回文件
 				dirty[index] = false;
 			}
 		}
@@ -54,10 +54,10 @@ public:
 	 * @参数ifRead:是否要将文件页中的内容读到缓存中
 	 * 返回:缓存页面的首地址
 	 * 功能:为文件中的某一个页面获取一个缓存中的页面
-	 *           缓存中的页面在缓存页面数组中的下标记录在index中
-	 *           并根据ifRead是否为true决定是否将文件中的内容写到获取的缓存页面中
+	 *      缓存中的页面在缓存页面数组中的下标记录在index中
+	 *      并根据ifRead是否为true决定是否将文件中的内容写到获取的缓存页面中
 	 * 注意:在调用函数allocPage之前，调用者必须确信(fileID,pageID)指定的文件页面不存在缓存中
-	 *           如果确信指定的文件页面不在缓存中，那么就不用在hash表中进行查找，直接调用替换算法，节省时间
+	 *      如果确信指定的文件页面不在缓存中，那么就不用在hash表中进行查找，直接调用替换算法，节省时间
 	 */
 	int allocPage(int fileID, int pageID, bool ifRead = false) {
 		int index = fetchPage(fileID, pageID);
@@ -74,11 +74,11 @@ public:
 	 * @参数index:函数返回时，用来记录缓存页面数组中的下标
 	 * 返回:缓存页面的首地址
 	 * 功能:为文件中的某一个页面在缓存中找到对应的缓存页面
-	 *           文件页面由(fileID,pageID)指定
-	 *           缓存中的页面在缓存页面数组中的下标记录在index中
-	 *           首先，在hash表中查找(fileID,pageID)对应的缓存页面，
-	 *           如果能找到，那么表示文件页面在缓存中
-	 *           如果没有找到，那么就利用替换算法获取一个页面
+	 *      文件页面由(fileID,pageID)指定
+	 *      缓存中的页面在缓存页面数组中的下标记录在index中
+	 *      首先，在hash表中查找(fileID,pageID)对应的缓存页面，
+	 *      如果能找到，那么表示文件页面在缓存中
+	 *      如果没有找到，那么就利用替换算法获取一个页面
 	 */
 	int getPage(int fileID, int pageID) {
 		int index = hash->findIndex(fileID, pageID);
@@ -96,12 +96,13 @@ public:
 	 * @参数index:缓存页面数组中的下标，用来表示一个缓存页面
 	 * 功能:标记index代表的缓存页面被访问过，为替换算法提供信息
 	 */
-	void access(int index) {
+	BufType* access(int index) {
 		if (index == last) {
 			return;
 		}
 		replace->access(index);
 		last = index;
+		return addr + index * PAGE_SIZE;
 	}
 	/*
 	 * @函数名markDirty
@@ -161,12 +162,12 @@ public:
 	 * @参数fm:文件管理器，缓存管理器需要利用文件管理器与磁盘进行交互
 	 */
 	BufPageManager() {
-		int c = CAP;
-		int m = MOD;
+		int c = CAP;	// 缓存中页面个数上线
+		int m = MOD;	// hash算法的模
 		last = -1;
 		fileManager = new FileManager();
 		dirty = new bool[CAP];
-		addr = new BufType[CAP];
+		addr = new BufType[CAP];	// unsigned int*
 		hash = new MyHashMap(c, m);
 		list = new MultiList(CAP, MAX_FILE_NUM);
 	    replace = new FindReplace(c);

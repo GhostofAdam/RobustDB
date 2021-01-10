@@ -4,8 +4,8 @@
 #include <regex>
 #include <iomanip>
 
-#include "constants.h"
-#include "../parser/Expression.hpp"
+#include "common.hpp"
+#include "Expression.hpp"
 
 using std::string;
 
@@ -187,22 +187,22 @@ Expression calcExpression(expr_node *expr) {
 
     if (lv.type == TERM_INT) {
         switch (expr->op) {
-            case OPER_ADD:
-                result.value.value_i = lv.value.value_i + rv.value.value_i;
-                result.type = TERM_INT;
-                break;
-            case OPER_DEC:
-                result.value.value_i = lv.value.value_i - rv.value.value_i;
-                result.type = TERM_INT;
-                break;
-            case OPER_MUL:
-                result.value.value_i = lv.value.value_i * rv.value.value_i;
-                result.type = TERM_INT;
-                break;
-            case OPER_DIV:
-                result.value.value_i = lv.value.value_i / rv.value.value_i;
-                result.type = TERM_INT;
-                break;
+            // case OPER_ADD:
+            //     result.value.value_i = lv.value.value_i + rv.value.value_i;
+            //     result.type = TERM_INT;
+            //     break;
+            // case OPER_DEC:
+            //     result.value.value_i = lv.value.value_i - rv.value.value_i;
+            //     result.type = TERM_INT;
+            //     break;
+            // case OPER_MUL:
+            //     result.value.value_i = lv.value.value_i * rv.value.value_i;
+            //     result.type = TERM_INT;
+            //     break;
+            // case OPER_DIV:
+            //     result.value.value_i = lv.value.value_i / rv.value.value_i;
+            //     result.type = TERM_INT;
+            //     break;
             case OPER_EQU:
                 //printf("Left: %d, Right: %d\n", lv.value.value_i, rv.value.value_i);
                 result.value.value_b = lv.value.value_i == rv.value.value_i;
@@ -270,22 +270,22 @@ Expression calcExpression(expr_node *expr) {
         }
     } else if (lv.type == TERM_FLOAT) {
         switch (expr->op) {
-            case OPER_ADD:
-                result.value.value_f = lv.value.value_f + rv.value.value_f;
-                result.type = TERM_FLOAT;
-                break;
-            case OPER_DEC:
-                result.value.value_f = lv.value.value_f - rv.value.value_f;
-                result.type = TERM_FLOAT;
-                break;
-            case OPER_MUL:
-                result.value.value_f = lv.value.value_f * rv.value.value_f;
-                result.type = TERM_FLOAT;
-                break;
-            case OPER_DIV:
-                result.value.value_f = lv.value.value_f / rv.value.value_f;
-                result.type = TERM_FLOAT;
-                break;
+            // case OPER_ADD:
+            //     result.value.value_f = lv.value.value_f + rv.value.value_f;
+            //     result.type = TERM_FLOAT;
+            //     break;
+            // case OPER_DEC:
+            //     result.value.value_f = lv.value.value_f - rv.value.value_f;
+            //     result.type = TERM_FLOAT;
+            //     break;
+            // case OPER_MUL:
+            //     result.value.value_f = lv.value.value_f * rv.value.value_f;
+            //     result.type = TERM_FLOAT;
+            //     break;
+            // case OPER_DIV:
+            //     result.value.value_f = lv.value.value_f / rv.value.value_f;
+            //     result.type = TERM_FLOAT;
+            //     break;
             case OPER_EQU:
                 result.value.value_b = lv.value.value_f == rv.value.value_f;
                 result.type = TERM_BOOL;
@@ -349,11 +349,11 @@ Expression calcExpression(expr_node *expr) {
     } else if (lv.type == TERM_STRING) {
         switch (expr->op) {
             case OPER_EQU:
-                result.value.value_b = (strcasecmp(lv.value.value_s, rv.value.value_s) == 0);
+                result.value.value_b = (stricmp(lv.value.value_s, rv.value.value_s) == 0);
                 result.type = TERM_BOOL;
                 break;
             case OPER_NEQ:
-                result.value.value_b = (strcasecmp(lv.value.value_s, rv.value.value_s) != 0);
+                result.value.value_b = (stricmp(lv.value.value_s, rv.value.value_s) != 0);
                 result.type = TERM_BOOL;
                 break;
             case OPER_LIKE:

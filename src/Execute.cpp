@@ -1,7 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include "Execute.hpp"
-
 #include "DBMS.hpp"
 
 void free_column_ref(column_ref *c) {
@@ -92,14 +91,13 @@ void execute_create_tb(const table_def *table) {
                 free(tc->foreign_table_name);
                 break;
             case CONSTRAINT_PRIMARY_KEY:
-                free_tables(tc->values);
+                free_tables(tc->column_list);
                 break;
         }
         free(tc);
         free(cons);
         cons = next;
     }
-
 }
 
 void execute_drop_db(const char *db_name) {
@@ -164,26 +162,33 @@ void execute_sql_eof() {
 }
 
 void execute_add_column(const char *tb_name, struct column_defs *col_def){
-
+    DBMS::getInstance()->addColumn(tb_name, col_def);
 }
+
 void execute_drop_column(const char *tb_name, struct column_ref *tb_col){
 
 }
+
 void execute_rename_column(const char *old_col, const char *new_col){
 
 }
+
 void execute_add_primary_key(const char *table_name){
 
 }
+
 void execute_add_constraint(const char *table_name, const char * cons_name, table_constraint* cons){
 
 }
+
 void execute_drop_primary_key_byname(const char *table_name, const char *pk_name){
 
 }
+
 void execute_drop_primary_key(const char *table_name){
 
 }
+
 void execute_drop_foreign_key(const char *table_name){
 
 }

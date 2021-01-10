@@ -3,7 +3,7 @@
 #include "stx/btree_set.h"
 
 class IndexKey {
-    int rid;
+    int rid;    // record id
     int permID;
     int fastCmp;
     int col;

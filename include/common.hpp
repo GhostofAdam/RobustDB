@@ -25,6 +25,7 @@ using std::queue;
 using std::ceil;
 //----------------------PAGE------------------------------------------
 #define PAGE_FOOTER_SIZE 64
+#define MAX_REC_PER_PAGE 512
 //----------------------TABLE--------------------------------------
 #define MAX_COLUMN_SIZE 32
 // both table name and column name

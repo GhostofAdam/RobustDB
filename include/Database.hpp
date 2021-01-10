@@ -12,7 +12,8 @@ public:
     void dropTableByName(const string &name);
     vector<string> getTableNames();
     string getDBName();
-    Table *getTableByName(const char* &name);
+    Table *getTableById(const size_t id);
+    Table *getTableByName(const char* name);
     bool setPrimaryKey(Table* tab, const char* columnName);
     bool setForeignKey(Table* tab, const char* columnName, const char* foreign_table_name, const char* foreign_column_name);
 private:

@@ -6,6 +6,7 @@
 #include <cstring>
 #include <iomanip>
 #include <sstream>
+#include "type_def.hpp"
 #include "DBMS.hpp"
 
 DBMS::DBMS() {
@@ -71,25 +72,24 @@ bool DBMS::convertToBool(const Expression &val) {
 
 Expression DBMS::dbTypeToExprType(char *data, ColumnType type) {
     Expression v;
-
     if (data == nullptr) {
-        return Expression(TERM_NULL);
+        return Expression((term_type)TERM_NULL);
     }
     switch (type) {
         case CT_INT:
-            v.type = TERM_INT;
+            v.type = (term_type)TERM_INT;
             v.value.value_i = *(int *) data;
             break;
         case CT_VARCHAR:
-            v.type = TERM_STRING;
+            v.type = (term_type)TERM_STRING;
             v.value.value_s = data;
             break;
         case CT_FLOAT:
-            v.type = TERM_FLOAT;
+            v.type = (term_type)TERM_FLOAT;
             v.value.value_f = *(float *) data;
             break;
         case CT_DATE:
-            v.type = TERM_DATE;
+            v.type = (term_type)TERM_DATE;
             v.value.value_i = *(int *) data;
             break;
         default:
@@ -102,13 +102,13 @@ Expression DBMS::dbTypeToExprType(char *data, ColumnType type) {
 term_type DBMS::ColumnTypeToExprType(const ColumnType &type) {
     switch (type) {
         case CT_INT:
-            return TERM_INT;
+            return (term_type)TERM_INT;
         case CT_FLOAT:
-            return TERM_FLOAT;
+            return (term_type)TERM_FLOAT;
         case CT_VARCHAR:
-            return TERM_STRING;
+            return (term_type)TERM_STRING;
         case CT_DATE:
-            return TERM_DATE;
+            return (term_type)TERM_DATE;
         default:
             throw (int) EXCEPTION_WRONG_DATA_TYPE;
     }
@@ -416,16 +416,16 @@ int DBMS::isAggregate(const linked_list *column_expr) {
     int flags = 0;
     for (const linked_list *j = column_expr; j; j = j->next) {
         auto *node = (expr_node *) j->data;
-        if (node->op == OPER_MAX ||
-            node->op == OPER_MIN ||
-            node->op == OPER_AVG ||
-            node->op == OPER_SUM ||
-            node->op == OPER_COUNT) {
-
-            flags |= 2;
-        } else {
-            flags |= 1;
-        }
+        // if (node->op == OPER_MAX ||
+        //     node->op == OPER_MIN ||
+        //     node->op == OPER_AVG ||
+        //     node->op == OPER_SUM ||
+        //     node->op == OPER_COUNT) {
+        //     flags |= 2;
+        // } else {
+        //     flags |= 1;
+        // }
+        flags |= 1;
     }
     return flags;
 }
@@ -514,7 +514,7 @@ void DBMS::createTable(const table_def *table) {
         auto *cons = (table_constraint *) (cons_list->data);
         switch (cons->type) {
             case CONSTRAINT_PRIMARY_KEY: {
-                auto *table_names = cons->values;
+                auto *table_names = cons->column_list;
                 for (; table_names; table_names = table_names->next) {
                     auto column_name = ((column_ref *) table_names->data)->column;
                     printf("Primary key constraint: Column in primary key: %s\n", column_name);
@@ -721,15 +721,14 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
         return;
     }
     std::vector<int> colId;
-    if (!columns) { //column list is not specified
-        for (int i = tb->getColumnCount() - 1; i > 0; --i) //exclude RID
-        {
+    if (!columns) { // 没有特别指定列
+        for (int i = tb->getColumnCount() - 1; i > 0; --i) { //exclude RID
             colId.push_back(i);
         }
-    } else
+    } else  // 指定列
         for (const linked_list *i = columns; i; i = i->next) {
             const column_ref *col = (column_ref *) i->data;
-            int id = tb->getColumnID(col->column);
+            int id = tb->getColumnID(col->column);  // 检查列名是否合法
             printf("Column %s id=%d\n", col->column, id);
             if (id < 0) {
                 printf("Column %s not found\n", col->column);
@@ -797,8 +796,27 @@ void DBMS::addColumn(const char *table, struct column_defs *col_def) {
         return;
     }
     while (col_def != nullptr) {
+        int id = tb->addColumn(col_def->name,
+                              (ColumnType)col_def->type,
+                              (bool) col_def->flags & COLUMN_FLAG_NOTNULL,
+                              (bool) col_def->flags & COLUMN_FLAG_DEFAULT,
+                              nullptr);
         col_def = col_def->next;
+        if (id == -1) {
+            printf("Column %s exits\n", col_def->name);
+        }
     }
+}
+
+void DBMS::dropColumn(const char *table, struct columndef *tb_col) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(table))) {
+        printf("Table %s not found\n", table);
+        return;
+    }
+    
 }
 
 void DBMS::createIndex(column_ref *tb_col) {
