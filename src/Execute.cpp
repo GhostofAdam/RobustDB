@@ -161,34 +161,34 @@ void execute_sql_eof() {
     DBMS::getInstance()->exit();
 }
 
-void execute_add_column(const char *tb_name, struct column_defs *col_def){
+void execute_add_column(const char *tb_name, struct column_defs *col_def) {
     DBMS::getInstance()->addColumn(tb_name, col_def);
 }
 
-void execute_drop_column(const char *tb_name, struct column_ref *tb_col){
-
+void execute_drop_column(const char *tb_name, struct column_ref *tb_col) {
+    DBMS::getInstance()->dropColumn(tb_name, tb_col);
 }
 
-void execute_rename_column(const char *old_col, const char *new_col){
-
+void execute_rename_column(const char *tb_name, const char *old_col, const char *new_col) {
+    DBMS::getInstance()->renameColumn(tb_name, old_col, new_col);
 }
 
-void execute_add_primary_key(const char *table_name){
-
+void execute_add_primary_key(const char *tb_name, const char *col) {
+    DBMS::getInstance()->addPrimary(tb_name, col);
 }
 
-void execute_add_constraint(const char *table_name, const char * cons_name, table_constraint* cons){
-
+void execute_add_constraint(const char *tb_name, const char *cons_name, table_constraint *cons) {
+    DBMS::getInstance()->addConstraint(tb_name, cons_name, cons);
 }
 
-void execute_drop_primary_key_byname(const char *table_name, const char *pk_name){
-
+void execute_drop_primary_key_byname(const char *tb_name, const char *col) {
+    DBMS::getInstance()->dropPrimary_byname(tb_name, col);
 }
 
-void execute_drop_primary_key(const char *table_name){
-
+void execute_drop_primary_key(const char *tb_name) {
+    DBMS::getInstance()->dropPrimary(tb_name);
 }
 
-void execute_drop_foreign_key(const char *table_name){
-
+void execute_drop_foreign_key(const char *tb_name){
+    DBMS::getInstance()->dropForeign(tb_name);
 }

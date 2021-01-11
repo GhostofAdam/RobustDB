@@ -52,10 +52,15 @@ public:
     void inverseFooter(const char *page, int idx);
     int addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, const char *data);
     int dropColumn(const char *name);
+    int renameColumn(const char *old_col, const char *new_col);
     int getColumnID(const char *name);
     char *getColumnName(int col);
+    int addPrimary(const char *col);
+    int dropPrimary_byname(const char *col);
+    void dropPrimary();
     void setPrimary(int col);
     void addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId);
+    void dropForeign();
     int getColumnCount(){return head.columnTot;}
     int getFastCmp(RID_t rid, int col);
     bool getIsNull(RID_t rid, int col);

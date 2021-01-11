@@ -808,7 +808,7 @@ void DBMS::addColumn(const char *table, struct column_defs *col_def) {
     }
 }
 
-void DBMS::dropColumn(const char *table, struct columndef *tb_col) {
+void DBMS::dropColumn(const char *table, struct column_ref *tb_col) {
     Table *tb;
     if (!requireDbOpen())
         return;
@@ -816,7 +816,92 @@ void DBMS::dropColumn(const char *table, struct columndef *tb_col) {
         printf("Table %s not found\n", table);
         return;
     }
-    
+    int id = tb->dropColumn(tb_col->column);
+    if (id == -1) {
+        printf("Column %s doesn't exist\n", tb_col->column);
+    }
+}
+
+void DBMS::renameColumn(const char *table, const char *old_col, const char *new_col) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(table))) {
+        printf("Table %s not found\n", table);
+        return;
+    }
+    int id = tb->renameColumn(old_col, new_col);
+    if (id == -1) {
+        printf("Column %s doesn't exist\n", old_col);
+    }
+}
+
+void DBMS::addPrimary(const char *table, const char *col) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(table))) {
+        printf("Table %s not found\n", table);
+        return;
+    }
+    int id = tb->addPrimary(col);
+    if (id == -1) {
+        printf("Column %s doesn't exist\n", col);
+    }
+}
+
+void DBMS::dropPrimary(const char *table) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(table))) {
+        printf("Table %s not found\n", table);
+        return;
+    }
+    tb->dropPrimary();
+}
+
+void DBMS::dropPrimary_byname(const char *table, const char *col) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(table))) {
+        printf("Table %s not found\n", table);
+        return;
+    }
+    int id = tb->dropPrimary_byname(col);
+    if (id == -1) {
+        printf("Column %s doesn't exist\n", col);
+    }
+}
+
+void DBMS::addConstraint(const char *table, const char *cons_name, table_constraint *cons) {
+    Table *tb, *tb_cons;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(table))) {
+        printf("Table %s not found\n", table);
+        return;
+    }
+    if (!(tb_cons = current->getTableByName(cons->foreign_table_name))) {
+        printf("Foreign Table %s not found\n", cons->foreign_table_name);
+        return;
+    }
+    int col_id = tb->getColumnID(cons->column_name);
+    int foreign_table_id = current->getTableId(cons->foreign_table_name);
+    int foreign_col_id = tb_cons->getColumnID(cons->foreign_column_name);
+    tb->addForeignKeyConstraint(col_id, foreign_table_id, foreign_col_id);
+}
+
+void DBMS::dropForeign(const char *table) {
+    Table *tb;
+    if (!requireDbOpen())
+        return;
+    if (!(tb = current->getTableByName(table))) {
+        printf("Table %s not found\n", table);
+        return;
+    }
+    tb->dropForeign();
 }
 
 void DBMS::createIndex(column_ref *tb_col) {

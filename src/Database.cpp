@@ -96,6 +96,13 @@ void Database::dropTableByName(const std::string &name) {
     remove((dbName + "." + name + ".table").c_str());
 }
 
+int Database::getTableId(const char *name) {
+    for (size_t i = 0; i < tableSize; i++)
+        if (tableName[i] == name) {
+            return i;
+        }
+}
+
 Table *Database::getTableById(const size_t id) {
     if (id < tableSize) return table[id];
     else return nullptr;

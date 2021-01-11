@@ -100,6 +100,11 @@ void Table::create(const char* tableName) {
     head.checkTot = 0;
     head.foreignKeyTot = 0; // 外键数量
     head.primaryCount = 0;  // 主键数量
+    addColumn("RID", (ColumnType)CT_INT, true, false, nullptr);
+    setPrimary(0);
+    for (auto &col: colIndex) {
+        col.clear();
+    }
 }
 
 void Table::open(const char* tableName) {
@@ -383,11 +388,66 @@ int Table::dropColumn(const char *name) {
     }
     if (id == -1)
         return -1;
-    
+    ColumnType type = head.columnType[id];
+    switch (type) {
+        case CT_INT:
+        case CT_FLOAT:
+        case CT_DATE:
+            head.recordByte -= 4;
+            int offset = head.defaultOffset[id];
+            if (offset != -1) {
+                for (int i = 0; i < head.columnTot; i++) {
+                    if (head.defaultOffset[i] > offset)
+                        head.defaultOffset[i] -= 4;
+                }
+                memcpy(head.dataArr + offset, head.dataArr + offset + 4, head.dataArrUsed - offset - 4);
+                head.dataArrUsed -= 4;
+            }
+            break;
+        case CT_VARCHAR:
+            int data_len = MAX_NAME_LEN + 1 + 4 - (MAX_NAME_LEN + 1) % 4;
+            head.recordByte -= data_len;
+            int offset = head.defaultOffset[id];
+            if (head.defaultOffset[id] != -1) {
+                int next_offset = -1;
+                for (int i = 0; i < head.columnTot; i++) {
+                    if (head.defaultOffset[i] > offset)
+                        if (next_offset == -1 || head.defaultOffset[i] < next_offset)
+                            next_offset = head.defaultOffset[i];
+                }
+                for (int i = 0; i < head.columnTot; i++) {
+                    if (head.defaultOffset[i] > offset)
+                        head.defaultOffset[i] -= (next_offset - offset);
+                }
+                memcpy(head.dataArr + offset, head.dataArr + offset + (next_offset - offset), head.dataArrUsed - offset - (next_offset - offset));
+                head.dataArrUsed -= (next_offset - offset);
+            }
+            break;
+        default:
+            assert(0);
+    }
+    for (int i = id; i < head.columnTot - 1; i++) {
+        head.columnType[i] = head.columnType[i + 1];
+        head.columnOffset[i] = head.columnOffset[i + 1];
+        head.columnLen[i] = head.columnLen[i + 1];
+        head.defaultOffset[i] = head.defaultOffset[i + 1];
+    }
+    head.columnTot--;
+    return id;
+}
+
+int Table::renameColumn(const char *old_col, const char *new_col) {
+    for (int i = 0; i < head.columnTot; i++) {
+        if (strcmp(head.columnName[i], old_col) == 0) {
+            strcpy(head.columnName[i], new_col);
+            return i;
+        }
+    }
+    return -1;
 }
 
 int Table::getColumnID(const char *name) {
-    for (int i = 1; i < head.columnTot; i++)
+    for (int i = 0; i < head.columnTot; i++)
         if (strcmp(head.columnName[i], name) == 0)
             return i;
     return -1;
@@ -396,6 +456,32 @@ int Table::getColumnID(const char *name) {
 char *Table::getColumnName(int col) {
     assert(0 <= col && col < head.columnTot);
     return head.columnName[col];
+}
+
+int Table::addPrimary(const char *col) {
+    for (int i = 0; i < head.columnTot; i++) {
+        if (strcmp(head.columnName[i], col) == 0) {
+            setPrimary(i);
+            return i;
+        }
+    }
+    return -1;
+}
+
+int Table::dropPrimary_byname(const char *col) {
+    for (int i = 0; i < head.columnTot; i++) {
+        if (strcmp(head.columnName[i], col) == 0) {
+            head.isPrimary &= ~(1 << i);
+            --head.primaryCount;
+            return i;
+        }
+    }
+    return -1;
+}
+
+void Table::dropPrimary() {
+    head.isPrimary = 0;
+    head.primaryCount = 0;
 }
 
 void Table::setPrimary(int col) {
@@ -410,6 +496,10 @@ void Table::addForeignKeyConstraint(unsigned int col, unsigned int foreignTableI
     head.foreignKeyList[head.foreignKeyTot].foreign_table_id = foreignTableId;
     head.foreignKeyList[head.foreignKeyTot].foreign_col = foreignColId;
     head.foreignKeyTot++;
+}
+
+void Table::dropForeign() {
+    head.foreignKeyTot = 0;
 }
 
 void Table::initTempRecord() {

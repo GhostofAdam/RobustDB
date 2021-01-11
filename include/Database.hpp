@@ -12,6 +12,7 @@ public:
     void dropTableByName(const string &name);
     vector<string> getTableNames();
     string getDBName();
+    int getTableId(const char *name);
     Table *getTableById(const size_t id);
     Table *getTableByName(const char* name);
     bool setPrimaryKey(Table* tab, const char* columnName);

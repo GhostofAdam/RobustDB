@@ -19,7 +19,13 @@ public:
     void deleteRow(const char *table, expr_node *condition);
     void insertRow(const char *table, const linked_list *columns, const linked_list *values);
     void addColumn(const char *table, struct column_defs *col_def);
-    void dropColumn(const char *table, struct columndef *tb_col);
+    void dropColumn(const char *table, struct column_ref *tb_col);
+    void renameColumn(const char *table, const char *old_col, const char *new_col);
+    void addPrimary(const char *table, const char *col);
+    void dropPrimary(const char *table);
+    void dropPrimary_byname(const char *table, const char *col);
+    void addConstraint(const char *table, const char *cons_name, table_constraint *cons);
+    void dropForeign(const char *table);
     void createIndex(column_ref *tb_col);
     void dropIndex(column_ref *tb_col);
     void descTable(const char *name);
