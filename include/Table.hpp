@@ -68,12 +68,10 @@ public:
     void insertColIndex(RID_t rid, int col);
     void dropRecord(RID_t rid);
     void printTableDef();
-<<<<<<< HEAD
     bool insert2Buffer(int col, const char *data);
     bool insert2Record();
     void clearBuffer();
     void resetBuffer();
-=======
     void createIndex(int col);
     void dropIndex(int col);
     bool hasIndex(int col){return (head.hasIndex & (1 << col)) != 0;}
@@ -100,7 +98,6 @@ public:
     RID_t selectIndexUpperBound(int col, const char *data);
     RID_t selectIndexUpperBoundNull(int col);
     RID_t selectReveredIndexNext(int col);
->>>>>>> e66850cda7e99075871dc5dff26d3f43fe72e999
 private:
     TableHead head;
     string tableName;
