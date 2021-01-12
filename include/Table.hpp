@@ -16,46 +16,91 @@ struct ForeignKey {
 };
 
 struct TableHead {
-    int8_t columnTot, primaryCount, checkTot, foreignKeyTot;
-    int pageTot, recordByte, dataArrUsed;
-    RID_t nextAvail, notNull, hasIndex, isPrimary;
-
+    int8_t columnTot;
+    int8_t primaryCount;
+    int8_t checkTot;
+    int8_t foreignKeyTot;
+    int pageTot;
+    int recordByte;
+    int dataArrUsed;    // addColumn中使用,记录dataArr的offset
+    RID_t nextAvail;
+    RID_t notNull;
+    RID_t hasIndex;
+    RID_t isPrimary;
+    char dataArr[MAX_DATA_SIZE];    // 存储default data值
     char columnName[MAX_COLUMN_SIZE][MAX_NAME_LEN];
-    int columnOffset[MAX_COLUMN_SIZE];
-    ColumnType columnType[MAX_COLUMN_SIZE];
     int columnLen[MAX_COLUMN_SIZE];
+    int columnOffset[MAX_COLUMN_SIZE];
     int defaultOffset[MAX_COLUMN_SIZE];
+    ColumnType columnType[MAX_COLUMN_SIZE];
     Check checkList[MAX_CHECK];
     ForeignKey foreignKeyList[MAX_FOREIGN_KEY];
-    char dataArr[MAX_DATA_SIZE];
 };
 class Table{
     friend class Database;
 public:
+    Table();
+    ~Table();
     void allocPage();
+    std::string getTableName();
+    RID_t getNext(RID_t rid);
     char *getRecordTempPtr(RID_t rid);
     int getColumnOffset(int col){return head.columnOffset[col];}
     ColumnType getColumnType(int col){return head.columnType[col];}
-    Table();
-    ~Table();
     char *select(RID_t rid, int col);
     int getFooter(char *page, int idx);
-    // return -1 if failed, otherwise column id
+    void inverseFooter(const char *page, int idx);
     int addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, const char *data);
-    // return -1 if not found
+    int dropColumn(const char *name);
+    int renameColumn(const char *old_col, const char *new_col);
     int getColumnID(const char *name);
+    char *getColumnName(int col);
+    int addPrimary(const char *col);
+    int dropPrimary_byname(const char *col);
+    void dropPrimary();
     void setPrimary(int col);
     void addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId);
-    void createIndex(int col);
-    void dropIndex(int col);
-    bool hasIndex(int col){return (head.hasIndex & (1 << col)) != 0;}
+    void dropForeign();
     int getColumnCount(){return head.columnTot;}
+    int getFastCmp(RID_t rid, int col);
+    bool getIsNull(RID_t rid, int col);
+    void eraseColIndex(RID_t rid, int col);
+    void insertColIndex(RID_t rid, int col);
     void dropRecord(RID_t rid);
     void printTableDef();
+<<<<<<< HEAD
     bool insert2Buffer(int col, const char *data);
     bool insert2Record();
     void clearBuffer();
     void resetBuffer();
+=======
+    void createIndex(int col);
+    void dropIndex(int col);
+    bool hasIndex(int col){return (head.hasIndex & (1 << col)) != 0;}
+    void initTempRecord();
+    void clearTempRecord();
+    void setTempRecordNull(int col);
+    std::string setTempRecord(int col, const char *data);
+    std::string insertTempRecord();
+    std::string checkRecord();
+    std::string loadRecordToTemp(RID_t rid, char *page, int offset);
+    std::string modifyRecordNull(RID_t rid, int col);
+    std::string modifyRecord(RID_t rid, int col, char *data);
+    bool isPrimary(int col);
+    bool checkPrimary();
+    std::string checkValueConstraint();
+    std::string checkForeignKeyConstraint();
+    std::string genCheckError(int checkId);
+    RID_t selectIndexLowerBoundEqual(int col, const char *data);
+    RID_t selectIndexLowerBound(int col, const char *data);
+    RID_t selectIndexLowerBoundEqual(int col, const char *data);
+    RID_t selectIndexLowerBoundNull(int col);
+    RID_t selectIndexNext(int col);
+    RID_t selectIndexNextEqual(int col);
+    RID_t selectIndexUpperBound(int col, const char *data);
+    RID_t selectIndexUpperBoundNull(int col);
+    RID_t selectReveredIndexNext(int col);
+>>>>>>> e66850cda7e99075871dc5dff26d3f43fe72e999
 private:
     TableHead head;
     string tableName;

@@ -95,13 +95,27 @@ void Database::dropTableByName(const std::string &name) {
     tableName.back() = "";
     remove((dbName + "." + name + ".table").c_str());
 }
-Table *Database::getTableByName(const char* &name) {
+
+int Database::getTableId(const char *name) {
+    for (size_t i = 0; i < tableSize; i++)
+        if (tableName[i] == name) {
+            return i;
+        }
+}
+
+Table *Database::getTableById(const size_t id) {
+    if (id < tableSize) return table[id];
+    else return nullptr;
+}
+
+Table *Database::getTableByName(const char* name) {
     for (size_t i = 0; i < tableSize; i++)
         if (tableName[i] == name) {
             return table[i];
         }
     return nullptr;
 }
+
 vector<string> Database::getTableNames() {
     return tableName;
 }
@@ -117,6 +131,7 @@ bool Database::setPrimaryKey(Table* tab, const char* column_name){
     tab->setPrimary(t);
     return true;
 }
+
 bool Database::setForeignKey(Table* tab, const char* column_name, const char* foreign_table_name, const char* foreign_column_name){
     int t = tab->getColumnID(column_name);
     if (t == -1) {
