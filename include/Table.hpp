@@ -52,6 +52,10 @@ public:
     int getColumnCount(){return head.columnTot;}
     void dropRecord(RID_t rid);
     void printTableDef();
+    bool insert2Buffer(int col, const char *data);
+    bool insert2Record();
+    void clearBuffer();
+    void resetBuffer();
 private:
     TableHead head;
     string tableName;

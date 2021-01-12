@@ -113,6 +113,8 @@ char *Table::getRecordTempPtr(RID_t rid) {
     assert(getFooter(page, offset / head.recordByte));
     return page + offset;
 }
+
+
 //return 0 when null
 //return value in tempbuf when rid = -1
 char *Table::select(RID_t rid, int col) {
@@ -142,6 +144,14 @@ char *Table::select(RID_t rid, int col) {
             assert(0);
     }
 }
+
+void Table::inverseFooter(const char *page, int idx) {
+    int u = idx / 32;
+    int v = idx % 32;
+    unsigned int &tmp = *(unsigned int *) (page + PAGE_SIZE - PAGE_FOOTER_SIZE + u * 4);
+    tmp ^= (1u << v);
+}
+
 int Table::getFooter(char *page, int idx) {
     int u = idx / 32;
     int v = idx % 32;
@@ -284,3 +294,110 @@ int64_t Table::addColumn(const char *name, ColumnType type, bool notNull, bool h
     assert(head.recordByte <= PAGE_SIZE);
     return id;
 }
+
+bool Table::insert2Buffer(int col, const char *data){
+    if(buf == nullptr){
+        buf = new char[head.recordByte];
+    }
+    unsigned int &notNull = *(unsigned int *) buf;
+    if(data == null){
+        if (notNull & (1u << col)) notNull ^= (1u << col);
+    }
+    
+    switch (head.columnType[col]) {
+        case CT_INT:
+        case CT_DATE:
+        case CT_FLOAT:
+            memcpy(buf + head.columnOffset[col], data, 4);
+            break;
+        case CT_VARCHAR:
+            if ((unsigned int) head.columnLen[col] < strlen(data)) {
+                printf("%d %s\n", head.columnLen[col], data);
+            }
+            if (strlen(data) > (unsigned int) head.columnLen[col]) {
+                printf("ERROR: varchar too long";)
+                return false;
+            }
+            strcpy(buf + head.columnOffset[col], data);
+            break;
+        default:
+            assert(0);
+    }
+    notNull |= (1u << col);
+    return true;
+}
+
+bool Table::insert2Record(){
+    assert(buf != nullptr);
+    if (head.nextAvail == (RID_t) -1) {
+        allocPage();
+    }
+    int rid = head.nextAvail;
+    insert2Buffer(0, (char *) &head.nextAvail);
+    auto error = checkBuffer();
+    if (!error.empty()) {
+        printf("Error occurred when inserting record, aborting...\n");
+        return false;
+    }
+    int pageID = head.nextAvail / PAGE_SIZE;
+    int offset = head.nextAvail % PAGE_SIZE;
+    int index = BufPageManager::getInstance().getPage(fileID, pageID);
+    char *page = BufPageManager::getInstance().access(index);
+    head.nextAvail = *(unsigned int *) (page + offset);
+    memcpy(page + offset, buf, head.recordByte);
+    BufPageManager::getInstance().markDirty(index);
+    inverseFooter(page, offset / head.recordByte);
+    for (int i = 0; i < head.columnTot; i++){
+        if (hasIndex(i)) {
+            colIndex[i].insert(IndexKey(permID, rid, col, getFastCmp(rid, col), getIsNull(rid, col)));
+        }
+    }
+    return true;
+}
+
+void Table::clearBuffer() {
+    if (buf == nullptr) {
+        buf = new char[head.recordByte];
+        resetBuffer();
+    }
+}
+void Table::resetBuffer(){
+    unsigned int &notNull = *(unsigned int *) buf;
+    notNull = 0;
+    for (int i = 0; i < head.columnTot; i++) {
+        if (head.defaultOffset[i] != -1) {
+            switch (head.columnType[i]) {
+                case CT_INT:
+                case CT_FLOAT:
+                case CT_DATE:
+                    memcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i], 4);
+                    break;
+                case CT_VARCHAR:
+                    strcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i]);
+                    break;
+                default:
+                    assert(false);
+            }
+            notNull |= (1u << i);
+        }
+    }
+}
+
+std::string Table::checkBuffer() {
+    unsigned int &notNull = *(unsigned int *) buf;
+    if ((notNull & head.notNull) != head.notNull) {
+        return "Insert Error: not null column is null.";
+    }
+    if (!checkPrimary()) {
+        return "ERROR: Primary Key Conflict";
+    }
+    auto foreignKeyCheck = checkForeignKeyConstraint();
+    if (!foreignKeyCheck.empty()) {
+        return foreignKeyCheck;
+    }
+    return std::string();
+}
+
+bool Table::checkPrimary(){}
+
+std::string Table::checkForeignKeyConstraint(){}

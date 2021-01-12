@@ -59,7 +59,7 @@ int yyerror(const char *str);
 %type <list> tb_opt_decs tb_opt_exist
 %type <t_constraint> tb_opt_dec
 %type <insert_argu> insert_stmt table_columns
-%type <expr_node> term factor expr condition_expr condition_term where_clause
+%type <expr_node> expr condition_expr condition_term where_clause
 %type <select_argu> select_stmt
 %type <delete_argu> delete_stmt
 %type <update_argu> update_stmt
@@ -132,7 +132,7 @@ delete_stmt: DELETE FROM table_name where_clause {
             }
             ;
 
-update_stmt: UPDATE table_name  SET column_ref '=' expr where_clause {
+update_stmt: UPDATE table_name  SET column_ref '=' value where_clause {
                 $$ = (update_argu*) malloc(sizeof(update_argu));
                 $$->table = $2;
                 $$->column = $4;
@@ -140,6 +140,8 @@ update_stmt: UPDATE table_name  SET column_ref '=' expr where_clause {
                 $$->where = $7;
             }
             ;
+set_clause: column_ref '=' value {}
+            | set_clause',' column_ref '=' value {}
 
 select_stmt: SELECT expr_list_or_star FROM table_refs where_clause{
                 $$ = (select_argu*)malloc(sizeof(select_argu));
@@ -224,12 +226,12 @@ column_constraint: NOT TOKEN_NULL {
             $$ = (column_constraint*)malloc(sizeof(column_constraint));
             $$->flags = COLUMN_FLAG_NOTNULL;
             }
-            | DEFAULT expr {
+            | DEFAULT value {
             $$ = (column_constraint*)malloc(sizeof(column_constraint));
             $$->flags = COLUMN_FLAG_DEFAULT;
             $$->default_value = $2;
             }
-            | NOT TOKEN_NULL DEFAULT expr{
+            | NOT TOKEN_NULL DEFAULT value{
             $$ = (column_constraint*)malloc(sizeof(column_constraint));
             $$->flags = COLUMN_FLAG_DEFAULT | COLUMN_FLAG_NOTNULL;
             $$->default_value = $4;
@@ -272,11 +274,18 @@ value_list:  '(' expr_list ')' {$$=(linked_list*)calloc(1,sizeof(linked_list));$
            | value_list ','  '(' expr_list ')'  {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$4;$$->next=$1;}
            ;
 
-expr_list:  expr {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
-           | expr_list ','  expr  {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
+expr_list:  value {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
+           | expr_list ','  value  {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
            ;
 
-select_expr_list:  col[, col]*{}
+select_expr_list:  column_ref {
+                        $$ = (linked_list)calloc(1,sizeof(linked_list));
+                        $$->data = $1;
+                    }
+                |select_expr_list',' column_ref{
+                        $1->next = $3;
+                        $$ = $1;
+                    }
 
 table_columns: table_name {$$=(insert_argu*)calloc(1,sizeof(insert_argu));$$->table=$1;}
             | table_name '(' column_list ')' {$$=(insert_argu*)calloc(1,sizeof(insert_argu));$$->table=$1;$$->columns=$3;}
@@ -299,14 +308,14 @@ logic_op: AND { $$ = OPER_AND; }
         | OR { $$ = OPER_OR; }
         ;
 
-condition_term: col compare_op col {
+condition_term: column_ref compare_op column_ref {
                 $$=(expr_node*)calloc(1,sizeof(expr_node));
                 $$->left=$1;
                 $$->right=$3;
                 $$->op=$2;
             }
-            | col IS NULL{}
-            | col IS NOT NULL{}
+            | column_ref IS NULL{}
+            | column_ref IS NOT NULL{}
             ;
 
 compare_op: '=' {$$ = OPER_EQU;}
@@ -317,43 +326,7 @@ compare_op: '=' {$$ = OPER_EQU;}
             | NEQ {$$=OPER_NEQ;}
             | LIKE {$$=OPER_LIKE;}
             ;
-
-expr:   expr '+' factor {
-            $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->left=$1;
-            $$->right=$3;
-            $$->op=OPER_ADD;
-        }
-    |   expr '-' factor{
-            $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->left=$1;
-            $$->right=$3;
-            $$->op=OPER_DEC;
-        }
-    |   factor {$$=$1;}
-    ;
-
-factor: factor '*' term {
-            $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->left=$1;
-            $$->right=$3;
-            $$->op=OPER_MUL;
-        }
-    |  factor '/' term {
-            $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->left=$1;
-            $$->right=$3;
-            $$->op=OPER_DIV;
-        }
-    | term {$$=$1;}
-    ;
-
-term: column_ref {
-            $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->column=$1;
-            $$->node_type=TERM_COLUMN;
-        }
-    | INT_LITERAL {
+value: INT_LITERAL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->literal_i=$1;
             $$->node_type=TERM_INT;
@@ -377,13 +350,16 @@ term: column_ref {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->node_type=TERM_NULL;
         }
-    | '-' term {
+
+expr: column_ref{
             $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->left=$2;
-            $$->op=OPER_NEG;
+            $$->column=$1;
+            $$->node_type=TERM_COLUMN;
         }
-    | '(' expr ')' {$$ = $2;}
-    ;
+    | value{
+        $$ = $1;
+    }
+
 column_name_list: IDENTIFIER, column_name_list{ temp=(linked_list*)calloc(1,sizeof(linked_list));$$->data = temp; $3->next = temp; $$ = $3}
     | IDENTIFIER{$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data = $1; $$->next = null;}
 

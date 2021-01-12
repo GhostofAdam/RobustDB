@@ -95,15 +95,11 @@ typedef struct table_constraint {
 
 typedef struct expr_node {
     union {
-        struct expr_node *left;
         char *literal_s;
         int literal_i;
         float literal_f;
         uint8_t literal_b;
-        column_ref *column;
     };
-    struct expr_node *right;
-    operator_type op;
     term_type node_type;
 } expr_node;
 

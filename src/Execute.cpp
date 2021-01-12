@@ -92,14 +92,13 @@ void execute_create_tb(const table_def *table) {
                 free(tc->foreign_table_name);
                 break;
             case CONSTRAINT_PRIMARY_KEY:
-                free_tables(tc->values);
+                free_tables(tc->column_list);
                 break;
         }
         free(tc);
         free(cons);
         cons = next;
     }
-
 }
 
 void execute_drop_db(const char *db_name) {

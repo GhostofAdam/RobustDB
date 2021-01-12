@@ -47,4 +47,6 @@ private:
     void iterateRecords(linked_list *tables, expr_node *condition, CallbackFunc callback);
     void iterateRecords(Table *tb, expr_node *condition, CallbackFunc callback);
     void freeLinkedList(linked_list *t);
+    std::vector<std::pair<Table*, RID_t>> selectRidfromTables(const linked_list* openedTables, expr_node *condition);
+    std::vector<RID_t> selectRidfromTable(Table* openedTables, expr_node *condition);
 };
