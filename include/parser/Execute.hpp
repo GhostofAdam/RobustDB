@@ -26,7 +26,8 @@ void execute_create_idx(struct column_ref *tb_col);
 
 void execute_add_column(const char *tb_name, struct column_defs *col_def);
 void execute_drop_column(const char *tb_name, struct column_ref *tb_col);
-void execute_rename_column(const char *tb_name, const char *old_col, const char *new_col);
+//void execute_rename_column(const char *tb_name, const char *old_col, const char *new_col);
+void execute_rename_table(const char *old_table, const char *new_table);
 void execute_add_primary_key(const char *tb_name, const char *col);
 void execute_add_constraint(const char *tb_name, const char *cons_name, table_constraint *cons);
 void execute_drop_primary_key_byname(const char *tb_name, const char *col);

@@ -190,7 +190,7 @@ alterStmt := ALTER TABLE IDENTIFIER ADD column_dec{ execute_add_column($3,$5); }
             execute_drop_column(temp,$5);
         }
 		| ALTER TABLE IDENTIFIER RENAME TO IDENTIFIER{
-            execute_rename_column($3, $6);
+            execute_rename_table($3, $6);
 
         }
 		| ALTER TABLE IDENTIFIER DROP PRIMARY KEY{
@@ -241,14 +241,14 @@ column_constraint: NOT TOKEN_NULL {
 tb_opt_dec: PRIMARY KEY '(' column_list ')' {
                 $$=(table_constraint*)calloc(1,sizeof(table_constraint));
                 $$->type = CONSTRAINT_PRIMARY_KEY;
-                $$->values = $4;
+                $$->column_list = $4;
             }
-            |FOREIGN KEY '(' IDENTIFIER ')' REFERENCES IDENTIFIER '(' IDENTIFIER ')'{
+            |FOREIGN KEY '(' column_list ')' REFERENCES IDENTIFIER '(' column_list ')'{
                 $$=(table_constraint*)calloc(1,sizeof(table_constraint));
                 $$->type = CONSTRAINT_FOREIGN_KEY;
-                $$->column_name = $4;
+                $$->column_list = $4;
                 $$->foreign_table_name = $7;
-                $$->foreign_column_name = $9;
+                $$->foreign_column_list = $9;
             }
             ;
 

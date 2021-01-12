@@ -394,9 +394,10 @@ bool Table::insert2Buffer(int col, const char *data){
         buf = new char[head.recordByte];
     }
     unsigned int &notNull = *(unsigned int *) buf;
-    if(data == null){
+    if(data == nullptr){
         if (notNull & (1u << col)) notNull ^= (1u << col);
     }
+}
     
 int Table::dropColumn(const char *name) {
     printf("dropping column %s", name);
@@ -619,6 +620,8 @@ bool Table::insert2Record(){
     for (int i = 0; i < head.columnTot; i++) 
         insertColIndex(rid, i);
     return "";
+    }
+
 }
 
 bool Table::isPrimary(int col) {
@@ -701,6 +704,11 @@ void Table::resetBuffer(){
                     break;
                 case CT_VARCHAR:
                     strcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i]);
+            }
+        }
+    }
+}
+
 std::string Table::genCheckError(int checkId) {
     unsigned int &notNull = *(unsigned int *) buf;
     int ed = checkId + 1, st = checkId;
@@ -776,11 +784,6 @@ std::string Table::checkValueConstraint() {
             }
             notNull |= (1u << i);
         }
-    }
-}
-
-std::string Table::checkBuffer() {
-        }
         if (i == head.checkTot - 1 || chk.rel == RE_AND ||
             !(head.checkList[i + 1].rel == RE_OR && chk.col == head.checkList[i + 1].col)) {
             flag &= checkResult;
@@ -790,6 +793,7 @@ std::string Table::checkBuffer() {
     }
     return std::string();
 }
+
 
 std::string Table::checkForeignKeyConstraint() {
     for (int i = 0; i < head.foreignKeyTot; ++i) {
@@ -822,24 +826,6 @@ std::string Table::checkRecord() {
 bool Table::checkPrimary(){}
 
 std::string Table::checkForeignKeyConstraint(){}
-
-    if (!initMode) {
-        if (!checkPrimary()) {
-            return "ERROR: Primary Key Conflict";
-        }
-        auto valueCheck = checkValueConstraint();
-        if (!valueCheck.empty()) {
-            return valueCheck;
-        }
-
-        auto foreignKeyCheck = checkForeignKeyConstraint();
-        if (!foreignKeyCheck.empty()) {
-            return foreignKeyCheck;
-        }
-    }
-
-    return std::string();
-}
 
 std::string Table::loadRecordToTemp(RID_t rid, char *page, int offset) {
     UNUSED(rid);

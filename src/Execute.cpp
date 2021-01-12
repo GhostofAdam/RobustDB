@@ -169,9 +169,9 @@ void execute_drop_column(const char *tb_name, struct column_ref *tb_col) {
     DBMS::getInstance()->dropColumn(tb_name, tb_col);
 }
 
-void execute_rename_column(const char *tb_name, const char *old_col, const char *new_col) {
-    DBMS::getInstance()->renameColumn(tb_name, old_col, new_col);
-}
+// void execute_rename_column(const char *tb_name, const char *old_col, const char *new_col) {
+//     DBMS::getInstance()->renameColumn(tb_name, old_col, new_col);
+// }
 
 void execute_add_primary_key(const char *tb_name, const char *col) {
     DBMS::getInstance()->addPrimary(tb_name, col);
