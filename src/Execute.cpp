@@ -87,11 +87,11 @@ void execute_create_tb(const table_def *table) {
         auto *tc = (table_constraint *) (cons->data);
         switch(tc->type){
             case CONSTRAINT_FOREIGN_KEY:
-                free(tc->foreign_column_name);
+                free_column_list(tc->foreign_column_list);
                 free(tc->foreign_table_name);
                 break;
             case CONSTRAINT_PRIMARY_KEY:
-                free_tables(tc->column_list);
+                free_column_list(tc->column_list);
                 break;
         }
         free(tc);

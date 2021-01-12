@@ -50,7 +50,7 @@ public:
     char *select(RID_t rid, int col);
     int getFooter(char *page, int idx);
     void inverseFooter(const char *page, int idx);
-    int addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, const char *data);
+    int addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, expr_node *data);
     int dropColumn(const char *name);
     int renameColumn(const char *old_col, const char *new_col);
     int getColumnID(const char *name);

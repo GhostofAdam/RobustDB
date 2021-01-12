@@ -339,7 +339,7 @@ void DBMS::createTable(const table_def *table) {
         int id = tab->addColumn(column->name, type,
                                  (bool) column->flags->flags & COLUMN_FLAG_NOTNULL,
                                  (bool) column->flags->flags & COLUMN_FLAG_DEFAULT,
-                                 nullptr);
+                                 column->flags->default_value);
         succeed = id == -1;
         if(!succeed){
             printf("Column %s exits\n", column->name);
@@ -362,9 +362,9 @@ void DBMS::createTable(const table_def *table) {
                 break;
             }
             case CONSTRAINT_FOREIGN_KEY: {
-                printf("Foreign key: COLUMN %s REFERENCES TABLE %s COLUMN %s\n",
-                       cons->column_name, cons->foreign_table_name, cons->foreign_column_name);
-                succeed = current->setForeignKey(tab, cons->column_name, cons->foreign_table_name, cons->foreign_table_name);
+                // printf("Foreign key: COLUMN %s REFERENCES TABLE %s COLUMN %s\n",
+                //        cons->column_name, cons->foreign_table_name, cons->foreign_column_name);
+                // succeed = current->setForeignKey(tab, cons->column_list, cons->foreign_table_name, cons->foreign_column_list);
                 break;
             }
             default:

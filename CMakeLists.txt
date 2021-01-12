@@ -10,7 +10,7 @@ include
 
 # source
 FILE(GLOB_RECURSE src_files "src/*.cpp")
-set (main_cpp "tools/main.cpp")
+set (main_cpp "src/main.cpp")
 
 # target
 add_library(RobustDB SHARED ${src_files})

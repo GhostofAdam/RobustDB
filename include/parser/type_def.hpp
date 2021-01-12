@@ -89,7 +89,7 @@ typedef struct table_constraint {
     int type;
     struct linked_list *column_list;
     char *foreign_table_name;
-    char *foreign_column_list;
+    struct linked_list *foreign_column_list;
 } table_constraint;
 
 typedef struct expr_node {

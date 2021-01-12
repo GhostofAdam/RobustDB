@@ -349,7 +349,7 @@ void Table::dropRecord(RID_t rid) {
     BufPageManager::getInstance().markDirty(index);
 }
 
-int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, const char *data){
+int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, expr_node *data){
     printf("adding column: %s %d\n", name, type);
     for (int i = 0; i < head.columnTot; i++)    // 检查是否存在重复的列
         if (strcmp(head.columnName[i], name) == 0)
@@ -363,12 +363,26 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
     head.defaultOffset[id] = -1;
     switch (type) {
         case CT_INT:
+            head.recordByte += 4;
+            if (hasDefault) {
+                head.defaultOffset[id] = head.dataArrUsed;
+                memcpy(head.dataArr + head.dataArrUsed, &(data->literal_i), 4);
+                head.dataArrUsed += 4;
+            }
+            break;
         case CT_FLOAT:
+            head.recordByte += 4;
+            if (hasDefault) {
+                head.defaultOffset[id] = head.dataArrUsed;
+                memcpy(head.dataArr + head.dataArrUsed, &(data->literal_f), 4);
+                head.dataArrUsed += 4;
+            }
+            break;
         case CT_DATE:
             head.recordByte += 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
-                memcpy(head.dataArr + head.dataArrUsed, data, 4);
+                memcpy(head.dataArr + head.dataArrUsed, &(data->literal_i), 4);
                 head.dataArrUsed += 4;
             }
             break;
@@ -377,8 +391,8 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             head.recordByte += 4 - head.recordByte % 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
-                strcpy(head.dataArr + head.dataArrUsed, data);
-                head.dataArrUsed += strlen(data) + 1;
+                strcpy(head.dataArr + head.dataArrUsed, data->literal_s);
+                head.dataArrUsed += strlen(data->literal_s) + 1;
             }
             break;
         default:
