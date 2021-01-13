@@ -33,7 +33,8 @@ typedef enum operator_type {
     OPER_LIKE,
     OPER_NEG = OPER_UNARY,
     OPER_NOT,
-    OPER_ISNULL
+    OPER_ISNULL,
+    OPER_NOTNULL
 } operator_type;
 
 typedef enum term_type {
@@ -102,6 +103,20 @@ typedef struct expr_node {
     term_type node_type;
 } expr_node;
 
+
+typedef struct expr_condition {
+    column_ref* column;
+    expr_node* value;
+    operator_type op;
+} expr_condition;
+
+typedef struct condition_tree{
+    condition_tree* right;
+    condition_tree* left;
+    expr_condition* node;
+    operator_type op;
+} condition_tree;
+
 typedef struct insert_argu {
     char *table;
     linked_list *columns;
@@ -111,7 +126,7 @@ typedef struct insert_argu {
 typedef struct select_argu {
     linked_list *column_expr;
     linked_list *tables;
-    expr_node *where;
+    condition_tree *where;
 } select_argu;
 
 typedef struct delete_argu {

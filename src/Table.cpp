@@ -114,7 +114,7 @@ void Table::open(const char* tableName) {
     this->permID = BufPageManager::getFileManager().getFilePermID(fileID);
     RegisterManager::getInstance().checkIn(permID, this);
     int index = BufPageManager::getInstance().getPage(fileID, 0);   // 为文件首页在缓存中找到对应缓存页面
-    memcpy(&head, BufPageManager::getInstance().getBuf(index), sizeof(TableHead));  // 文件首页的缓存拷贝到head
+    std::memcpy(&head, BufPageManager::getInstance().getBuf(index), sizeof(TableHead));  // 文件首页的缓存拷贝到head
     BufPageManager::getInstance().access(index);    // 标记该页被访问过(LRU)
     this->ready = true;
     this->buf = nullptr;
@@ -127,7 +127,7 @@ void Table::close() {
     assert(this->ready);
     storeIndex();
     int index = BufPageManager::getInstance().getPage(fileID, 0);   // 找到文件首页对应的缓存页面
-    memcpy(BufPageManager::getInstance().getBuf(index), &head, sizeof(TableHead));  // head内容拷贝到文件中
+    std::memcpy(BufPageManager::getInstance().getBuf(index), &head, sizeof(TableHead));  // head内容拷贝到文件中
     BufPageManager::getInstance().access(index);    // 标记该页被访问过(LRU)
     BufPageManager::getInstance().markDirty(index); // 标记该页dirty
     RegisterManager::getInstance().checkOut(permID);
@@ -238,7 +238,7 @@ char *Table::select(RID_t rid, int col) {
         case CT_DATE:
         case CT_FLOAT:
             buf = new char[4];
-            memcpy(buf, ptr + getColumnOffset(col), 4);
+            std::memcpy(buf, ptr + getColumnOffset(col), 4);
             return buf;
         case CT_VARCHAR:
             buf = new char[head.columnLen[col] + 1];
@@ -366,7 +366,7 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             head.recordByte += 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
-                memcpy(head.dataArr + head.dataArrUsed, &(data->literal_i), 4);
+                std::memcpy(head.dataArr + head.dataArrUsed, &(data->literal_i), 4);
                 head.dataArrUsed += 4;
             }
             break;
@@ -374,7 +374,7 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             head.recordByte += 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
-                memcpy(head.dataArr + head.dataArrUsed, &(data->literal_f), 4);
+                std::memcpy(head.dataArr + head.dataArrUsed, &(data->literal_f), 4);
                 head.dataArrUsed += 4;
             }
             break;
@@ -382,7 +382,7 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             head.recordByte += 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
-                memcpy(head.dataArr + head.dataArrUsed, &(data->literal_i), 4);
+                std::memcpy(head.dataArr + head.dataArrUsed, &(data->literal_i), 4);
                 head.dataArrUsed += 4;
             }
             break;
@@ -412,6 +412,29 @@ bool Table::insert2Buffer(int col, const char *data){
         if (notNull & (1u << col)) notNull ^= (1u << col);
     }
 }
+bool Table::insert2Record(){
+    assert(buf != nullptr);
+    if (head.nextAvail == (RID_t) -1) {
+        allocPage();
+    }
+    int rid = head.nextAvail;
+    setTempRecord(0, (char *) &head.nextAvail);
+    auto error = checkRecord();
+    if (!error.empty()) {
+        printf("Error occurred when inserting record, aborting...\n");
+        return false;
+    }
+    int pageID = head.nextAvail / PAGE_SIZE;
+    int offset = head.nextAvail % PAGE_SIZE;
+    int index = BufPageManager::getInstance().getPage(fileID, pageID);
+    char *page = (char*) BufPageManager::getInstance().access(index);
+    head.nextAvail = *(unsigned int *) (page + offset);
+    std::memcpy(page + offset, buf, head.recordByte);
+    BufPageManager::getInstance().markDirty(index);
+    inverseFooter(page, offset / head.recordByte);
+    for (int i = 0; i < head.columnTot; i++) insertColIndex(rid, i);
+    return false;
+}
     
 int Table::dropColumn(const char *name) {
     printf("dropping column %s", name);
@@ -434,7 +457,7 @@ int Table::dropColumn(const char *name) {
                     if (head.defaultOffset[i] > offset)
                         head.defaultOffset[i] -= 4;
                 }
-                memcpy(head.dataArr + offset, head.dataArr + offset + 4, head.dataArrUsed - offset - 4);
+                std::memcpy(head.dataArr + offset, head.dataArr + offset + 4, head.dataArrUsed - offset - 4);
                 head.dataArrUsed -= 4;
             }
             break;
@@ -453,7 +476,7 @@ int Table::dropColumn(const char *name) {
                     if (head.defaultOffset[i] > offset)
                         head.defaultOffset[i] -= (next_offset - offset);
                 }
-                memcpy(head.dataArr + offset, head.dataArr + offset + (next_offset - offset), head.dataArrUsed - offset - (next_offset - offset));
+                std::memcpy(head.dataArr + offset, head.dataArr + offset + (next_offset - offset), head.dataArrUsed - offset - (next_offset - offset));
                 head.dataArrUsed -= (next_offset - offset);
             }
             break;
@@ -545,7 +568,7 @@ void Table::initTempRecord() {
                 case CT_INT:
                 case CT_FLOAT:
                 case CT_DATE:
-                    memcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i], 4);
+                    std::memcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i], 4);
                     break;
                 case CT_VARCHAR:
                     strcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i]);
@@ -588,15 +611,14 @@ std::string Table::setTempRecord(int col, const char *data) {
         case CT_INT:
         case CT_DATE:
         case CT_FLOAT:
-            memcpy(buf + head.columnOffset[col], data, 4);
+            std::memcpy(buf + head.columnOffset[col], data, 4);
             break;
         case CT_VARCHAR:
             if ((unsigned int) head.columnLen[col] < strlen(data)) {
                 printf("%d %s\n", head.columnLen[col], data);
             }
             if (strlen(data) > (unsigned int) head.columnLen[col]) {
-                printf("ERROR: varchar too long";)
-                return false;
+                return "ERROR: varchar too long";
             }
             strcpy(buf + head.columnOffset[col], data);
             break;
@@ -604,38 +626,34 @@ std::string Table::setTempRecord(int col, const char *data) {
             assert(0);
     }
     notNull |= (1u << col);
-    return true;
+    return "";
 }
 
-bool Table::insert2Record(){
+// return value change. Urgly interface.
+// return "" if success.
+// return error description otherwise.
+std::string Table::insertTempRecord() {
     assert(buf != nullptr);
     if (head.nextAvail == (RID_t) -1) {
         allocPage();
     }
     int rid = head.nextAvail;
-    insert2Buffer(0, (char *) &head.nextAvail);
-    auto error = checkBuffer();
+    setTempRecord(0, (char *) &head.nextAvail);
+    auto error = checkRecord();
     if (!error.empty()) {
         printf("Error occurred when inserting record, aborting...\n");
-        return false;
+        return error;
     }
     int pageID = head.nextAvail / PAGE_SIZE;
     int offset = head.nextAvail % PAGE_SIZE;
     int index = BufPageManager::getInstance().getPage(fileID, pageID);
-    char *page = BufPageManager::getInstance().access(index);
+    char *page = (char *)BufPageManager::getInstance().access(index);
     head.nextAvail = *(unsigned int *) (page + offset);
     memcpy(page + offset, buf, head.recordByte);
     BufPageManager::getInstance().markDirty(index);
     inverseFooter(page, offset / head.recordByte);
-    for (int i = 0; i < head.columnTot; i++){
-        if (hasIndex(i)) {
-            colIndex[i].insert(IndexKey(permID, rid, col, getFastCmp(rid, col), getIsNull(rid, col)));
-        }
-    for (int i = 0; i < head.columnTot; i++) 
-        insertColIndex(rid, i);
+    for (int i = 0; i < head.columnTot; i++) insertColIndex(rid, i);
     return "";
-    }
-
 }
 
 bool Table::isPrimary(int col) {

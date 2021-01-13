@@ -70,27 +70,28 @@ bool DBMS::convertToBool(const Expression &val) {
     return t;
 }
 
-Expression DBMS::dbTypeToExprType(char *data, ColumnType type) {
-    Expression v;
+expr_node DBMS::dbTypeToExprType(char *data, ColumnType type) {
+    expr_node v;
     if (data == nullptr) {
-        return Expression((term_type)TERM_NULL);
+        v.node_type = (term_type)TERM_NULL;
+        return v;
     }
     switch (type) {
         case CT_INT:
-            v.type = (term_type)TERM_INT;
-            v.value.value_i = *(int *) data;
+            v.node_type = (term_type)TERM_INT;
+            v.literal_i = *(int *) data;
             break;
         case CT_VARCHAR:
-            v.type = (term_type)TERM_STRING;
-            v.value.value_s = data;
+            v.node_type = (term_type)TERM_STRING;
+            v.literal_s = data;
             break;
         case CT_FLOAT:
-            v.type = (term_type)TERM_FLOAT;
-            v.value.value_f = *(float *) data;
+            v.node_type = (term_type)TERM_FLOAT;
+            v.literal_f = *(float *) data;
             break;
         case CT_DATE:
-            v.type = (term_type)TERM_DATE;
-            v.value.value_i = *(int *) data;
+            v.node_type = (term_type)TERM_DATE;
+            v.literal_i = *(int *) data;
             break;
         default:
             printf("Error: Unhandled type\n");
@@ -114,10 +115,10 @@ term_type DBMS::ColumnTypeToExprType(const ColumnType &type) {
     }
 }
 
-bool DBMS::checkColumnType(ColumnType type, const Expression &val) {
-    if (val.type == TERM_NULL)
+bool DBMS::checkColumnType(ColumnType type, const expr_node *val) {
+    if (val->node_type == TERM_NONE)
         return true;
-    switch (val.type) {
+    switch (val->node_type) {
         case TERM_INT:
             return type == CT_INT || type == CT_FLOAT;
         case TERM_FLOAT:
@@ -131,34 +132,32 @@ bool DBMS::checkColumnType(ColumnType type, const Expression &val) {
     }
 }
 
-char *DBMS::ExprTypeToDbType(Expression &val, term_type desiredType) {
+char *DBMS::ExprTypeToDbType(const expr_node *val, term_type desiredType) {
     char *ret = nullptr;
     //TODO: data type convert here, e.g. double->int
-    switch (val.type) {
+    switch (val->node_type) {
         case TERM_INT:
             if (desiredType == TERM_FLOAT) {
-                val.value.value_f = val.value.value_i;
-                ret = (char *) &val.value.value_f;
+                ret = (char *) &val->literal_f;
             } else {
-                ret = (char *) &val.value.value_i;
+                ret = (char *) &val->literal_i;
             }
             break;
         case TERM_BOOL:
-            ret = (char *) &val.value.value_b;
+            ret = (char *) &val->literal_b;
             break;
         case TERM_FLOAT:
             if (desiredType == TERM_INT) {
-                val.value.value_i = (int) val.value.value_f;
-                ret = (char *) &val.value.value_i;
+                ret = (char *) &val->literal_i;
             } else {
-                ret = (char *) &val.value.value_f;
+                ret = (char *) &val->literal_f;
             }
             break;
         case TERM_STRING:
-            ret = val.value.value_s;
+            ret = val->literal_s;
             break;
         case TERM_DATE:
-            ret = (char *) &val.value.value_i;
+            ret = (char *) &val->literal_i;
             break;
         case TERM_NULL:
             ret = nullptr;
@@ -170,21 +169,7 @@ char *DBMS::ExprTypeToDbType(Expression &val, term_type desiredType) {
     return ret;
 }
 
-void DBMS::cacheColumns(Table *tb, int rid) {
-    auto tb_name = tb->getTableName();
-    tb_name = tb_name.substr(tb_name.find('.') + 1); //strip database name
-    tb_name = tb_name.substr(0, tb_name.find('.'));
-    cleanColumnCacheByTable(tb_name.c_str());
-    for (int i = 1; i <= tb->getColumnCount() - 1; ++i)//exclude RID
-    {
-        auto *tmp = tb->select(rid, i);
-        updateColumnCache(tb->getColumnName(i),
-                          tb_name.c_str(),
-                          dbTypeToExprType(tmp, tb->getColumnType(i))
-        );
-        pendingFree.push_back(tmp);
-    }
-}
+
 
 void DBMS::freeCachedColumns() {
     for (const auto &ptr : pendingFree) {
@@ -193,50 +178,6 @@ void DBMS::freeCachedColumns() {
     pendingFree.clear();
 }
 
-DBMS::IDX_TYPE DBMS::checkIndexAvailability(Table *tb, RID_t *rid_l, RID_t *rid_u, int *col, expr_node *condition) {
-    //TODO: complex conditions
-    if (condition && condition->node_type == TERM_NONE && condition->op == OPER_AND)
-        condition = condition->left;
-    if (!(condition && condition->node_type == TERM_NONE && condition->left->node_type == TERM_COLUMN))
-        return IDX_NONE;
-    auto col_name = condition->left->column->column;
-    int c = tb->getColumnID(col_name);
-    /*if(c == -1){
-        c = tb->getColumnID(condition->right->column->column);
-    }*/
-    if (c == -1 || !tb->hasIndex(c))
-        return IDX_NONE;
-    Expression v;
-    try {
-        v = calcExpression(condition->right);
-    } catch (int err) {
-        printReadableException(err);
-        return IDX_NONE;
-    }
-    IDX_TYPE type;
-    switch (condition->op) {
-        case OPER_EQU:
-            type = IDX_EQUAL;
-            break;
-        case OPER_LT:
-        case OPER_LE:
-            type = IDX_UPPER;
-            break;
-        case OPER_GT:
-        case OPER_GE:
-            type = IDX_LOWWER;
-            break;
-        default:
-            type = IDX_NONE;
-    }
-    if (type != IDX_NONE) {
-        *col = c;
-        auto colType = ColumnTypeToExprType(tb->getColumnType(c));
-        *rid_u = tb->selectIndexUpperBound(c, ExprTypeToDbType(v, colType));
-        *rid_l = tb->selectIndexLowerBound(c, ExprTypeToDbType(v, colType));
-    }
-    return type;
-}
 
 RID_t DBMS::nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t rid_u) {
     if (type == IDX_EQUAL) {
@@ -334,8 +275,6 @@ void DBMS::createTable(const table_def *table) {
                 assert(0==1);
                 break;
         }
-        
-        column->flags->default_value;
         int id = tab->addColumn(column->name, type,
                                  (bool) column->flags->flags & COLUMN_FLAG_NOTNULL,
                                  (bool) column->flags->flags & COLUMN_FLAG_DEFAULT,
@@ -414,7 +353,7 @@ void DBMS::showTables() {
     printf("***********\n");
 }
 
-void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, expr_node *condition) {
+void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, condition_tree *condition) {
     int flags;
     if (!current->isOpen()){
         printf("Database is not open!");
@@ -445,6 +384,238 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
     freeLinkedList(openedTables);
 }
 
+std::vector<std::pair<Table*, RID_t>> DBMS::selectRidfromTables(const linked_list* openedTables, condition_tree *condition){
+
+}
+
+bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
+    if(condition->node){
+        auto cnt = column_cache.count(string(condition->node->column->column));
+        if (!cnt){
+            assert(0);
+            return false;
+        }
+        expr_node ret;
+        auto it = column_cache.find(string(condition->node->column->column));
+        for (; it != column_cache.end(); ++it) {
+            if (!condition->node->column->table || it->second.first == string(condition->node->column->table)) {
+                ret = it->second.second;
+                break;
+            }
+        }
+        if (ret.node_type == TERM_INT) {
+            switch (condition->node->op){
+            case OPER_EQU:            
+                return ret.literal_i == condition->node->value->literal_i;
+            case OPER_GT:
+                return ret.literal_i > condition->node->value->literal_i;
+            case OPER_GE:
+                return ret.literal_i >= condition->node->value->literal_i;
+            case OPER_LT:
+                return ret.literal_i < condition->node->value->literal_i;
+            case OPER_LE:
+                return ret.literal_i <= condition->node->value->literal_i;
+            case OPER_NEQ:
+                return ret.literal_i != condition->node->value->literal_i;
+            case OPER_ISNULL:
+                return false;
+            default:
+                throw (int) EXCEPTION_ILLEGAL_OP;
+            }
+        }
+        else if(ret.node_type == TERM_DATE){
+            switch (condition->node->op){
+            case OPER_EQU:            
+                return ret.literal_i == condition->node->value->literal_i;
+            case OPER_GT:
+                return ret.literal_i > condition->node->value->literal_i;
+            case OPER_GE:
+                return ret.literal_i >= condition->node->value->literal_i;
+            case OPER_LT:
+                return ret.literal_i < condition->node->value->literal_i;
+            case OPER_LE:
+                return ret.literal_i <= condition->node->value->literal_i;
+            case OPER_NEQ:
+                return ret.literal_i != condition->node->value->literal_i;
+            case OPER_ISNULL:
+                return false;
+            default:
+                throw (int) EXCEPTION_ILLEGAL_OP;
+            }
+        }
+        else if(ret.node_type == TERM_FLOAT){
+            switch (condition->node->op){
+            case OPER_EQU:            
+                return ret.literal_f == condition->node->value->literal_f;
+            case OPER_GT:
+                return ret.literal_f > condition->node->value->literal_f;
+            case OPER_GE:
+                return ret.literal_f >= condition->node->value->literal_f;
+            case OPER_LT:
+                return ret.literal_f < condition->node->value->literal_f;
+            case OPER_LE:
+                return ret.literal_f <= condition->node->value->literal_f;
+            case OPER_NEQ:
+                return ret.literal_f != condition->node->value->literal_f;
+            case OPER_ISNULL:
+                return false;
+            default:
+                throw (int) EXCEPTION_ILLEGAL_OP;
+            }
+        }
+        else if(ret.node_type == TERM_BOOL){
+            switch (condition->node->op){
+            case OPER_EQU:            
+                return ret.literal_b == condition->node->value->literal_b;
+            case OPER_GT:
+                return ret.literal_b > condition->node->value->literal_b;
+            case OPER_GE:
+                return ret.literal_b >= condition->node->value->literal_b;
+            case OPER_LT:
+                return ret.literal_b < condition->node->value->literal_b;
+            case OPER_LE:
+                return ret.literal_b <= condition->node->value->literal_b;
+            case OPER_NEQ:
+                return ret.literal_b != condition->node->value->literal_b;
+            case OPER_ISNULL:
+                return false;
+            default:
+                throw (int) EXCEPTION_ILLEGAL_OP;
+            }
+        }
+        else if(ret.node_type == TERM_STRING){
+            switch (condition->node->op){
+                case OPER_EQU:
+                    return strcasecmp(ret.literal_s, condition->node->value->literal_s) == 0;
+                case OPER_NEQ:
+                    return strcasecmp(ret.literal_s, condition->node->value->literal_s) != 0
+                case OPER_ISNULL:
+                    return false;
+            }
+        }
+        else {
+            assert(0);
+        }
+    }
+    
+    
+    bool right, left;
+    if(condition->left){
+        assert(condition->node==nullptr);
+        left = checkCondition(rid, condition->right);
+    }
+    if(condition->right){
+        assert(condition->node==nullptr);
+        right = checkCondition(rid, condition->right);
+    }
+    if(condition->op == OPER_AND){
+        return right && left;
+    }
+    else if(condition->op == OPER_OR){
+        return right || left;
+    }
+    else{
+        printf("wrong condition tree!\n")
+        assert(0);
+        return false;
+    }
+}
+
+void DBMS::cacheColumns(Table *tb, int rid) {
+    auto tb_name = tb->getTableName();
+    tb_name = tb_name.substr(tb_name.find('.') + 1); //strip database name
+    tb_name = tb_name.substr(0, tb_name.find('.'));
+    cleanColumnCacheByTable(tb_name.c_str());
+    for (int i = 1; i <= tb->getColumnCount() - 1; ++i)//exclude RID
+    {
+        auto *tmp = tb->select(rid, i);
+        updateColumnCache(tb->getColumnName(i),
+                          tb_name.c_str(),
+                          dbTypeToExprType(tmp, tb->getColumnType(i))
+        );
+        pendingFree.push_back(tmp);
+    }
+}
+void DBMS::updateColumnCache(const char *col_name, const char *table, const expr_node &v){
+    column_cache.insert(std::make_pair(string(col_name), table_value_t(string(table), v)));
+}
+void DBMS::cleanColumnCacheByTable(const char *table){
+    for (auto it = column_cache.begin(); it != column_cache.end();) {
+        if (it->second.first == table)
+            it = column_cache.erase(it);
+        else
+            ++it;
+    }
+}
+
+std::vector<RID_t> DBMS::selectRidfromTable(Table* tb, condition_tree *condition){
+    std::vector<RID_t> res;
+    RID_t rid = (RID_t) -1, rid_u;
+    int col;
+    IDX_TYPE idx = checkIndexAvailability(tb, &rid, &rid_u, &col, condition);
+    if (idx == IDX_NONE)
+        rid = tb->getNext((unsigned int) -1);
+    for (; rid != (RID_t) -1; rid = nextWithIndex(tb, idx, col, rid, rid_u)) {
+        cacheColumns(tb, rid);
+        if (condition) {
+            if(checkCondition(rid, condition)){
+                res.push_back(rid);
+            }
+        }
+    }
+    return res;
+}
+
+DBMS::IDX_TYPE DBMS::checkIndexAvailability(Table *tb, RID_t *rid_l, RID_t *rid_u, int *col, condition_tree *condition) {
+    // if (condition && condition->node == TERM_NONE && condition->op == OPER_AND)
+    //     condition = condition->left;
+    if (!(condition && condition->node))
+        return IDX_NONE;
+    auto col_name = condition->node->column->name;
+    int c = tb->getColumnID(col_name);
+    if (c == -1 || !tb->hasIndex(c))
+        return IDX_NONE;
+    expr_node* v = condition->node->value;
+    IDX_TYPE type;
+    switch (condition->op) {
+        case OPER_EQU:
+            type = IDX_EQUAL;
+            break;
+        case OPER_LT:
+        case OPER_LE:
+            type = IDX_UPPER;
+            break;
+        case OPER_GT:
+        case OPER_GE:
+            type = IDX_LOWWER;
+            break;
+        default:
+            type = IDX_NONE;
+    }
+    if (type != IDX_NONE) {
+        *col = c;
+        auto colType = ColumnTypeToExprType(tb->getColumnType(c));
+        *rid_u = tb->selectIndexUpperBound(c, ExprTypeToDbType(v, colType));
+        *rid_l = tb->selectIndexLowerBound(c, ExprTypeToDbType(v, colType));
+    }
+    return type;
+}
+
+RID_t DBMS::nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t rid_u) {
+    if (type == IDX_EQUAL) {
+        auto nxt = tb->selectIndexNext(col);
+        return rid == rid_u ? (RID_t) -1 : nxt; // current rid equals upper bound
+    } else if (type == IDX_UPPER)
+        return tb->selectReveredIndexNext(col);
+    else if (type == IDX_LOWWER)
+        return tb->selectIndexNext(col);
+    else {
+        return tb->getNext(rid);
+    }
+}
+
+
+
 void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column, expr_node *eval) {
     Table *tb;
     if (!current->isOpen()){
@@ -463,8 +634,10 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
         return;
     }
     auto resutls = selectRidfromTable(tb, condition);
-    for(auto i: resutls){
+    for(auto rid: resutls){
         //TODO
+        std::string ret = tb->modifyRecord(rid, col_to_update,
+                                               ExprTypeToDbType(eval, ColumnTypeToExprType(colType)));
     }
     
     printf("%d rows updated.\n", (int )resutls.size());
@@ -527,22 +700,13 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
         }
         if (cnt != colId.size()) {
             printf("Column size mismatch, will not execute (value size=%d)\n", cnt);
-            continue;
+            continue;   
         }
         auto it = colId.begin();
         bool succeed = false;
         for (const linked_list *j = expr_list; j; j = j->next) {
-            auto node = (expr_node *) j->data;
-            Expression val;
-            try {
-                val = calcExpression(node);
-            } catch (int err) {
-                printReadableException(err);
-                return;
-            } catch (...) {
-                printf("Exception occur %d\n", __LINE__);
-                return;
-            }
+            auto val = (expr_node *) j->data;
+           
             auto colType = tb->getColumnType(*it);
             if (!checkColumnType(colType, val)) {
                 printf("Wrong data type\n");

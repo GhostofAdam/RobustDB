@@ -64,6 +64,8 @@ int yyerror(const char *str);
 %type <delete_argu> delete_stmt
 %type <update_argu> update_stmt
 %type <ref_column> drop_idx_stmt create_idx_stmt
+%type <expr_condition> expr_condition
+%type <condition_tree> condition_tree
 
 %start program
 
@@ -295,9 +297,12 @@ column_list: column_ref {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data
            | column_list ','  column_ref  {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
            ;
 
-condition_expr: condition_term {$$=$1;}
-            | condition_expr logic_op condition_term {
-                $$=(expr_node*)calloc(1,sizeof(expr_node));
+condition_expr: condition_term {
+            $$=(condition_tree*)calloc(1,sizeof(condition_tree));
+            $$->node = $1;
+            }
+            | condition_expr logic_op condition_expr {
+                $$=(condition_tree*)calloc(1,sizeof(condition_tree));
                 $$->left=$1;
                 $$->right=$3;
                 $$->op=$2;
@@ -308,14 +313,22 @@ logic_op: AND { $$ = OPER_AND; }
         | OR { $$ = OPER_OR; }
         ;
 
-condition_term: column_ref compare_op column_ref {
-                $$=(expr_node*)calloc(1,sizeof(expr_node));
-                $$->left=$1;
-                $$->right=$3;
-                $$->op=$2;
+condition_term: column_ref compare_op value {
+                $$=(expr_condition*)calloc(1,sizeof(expr_condition));
+                $$->column=$1;
+                $$->value=$3;
+                $$->op=$3;
             }
-            | column_ref IS NULL{}
-            | column_ref IS NOT NULL{}
+            | column_ref IS NULL{
+                $$=(expr_condition*)calloc(1,sizeof(expr_condition));
+                $$->column=$1;
+                $$->op=OPER_ISNULL;
+            }
+            | column_ref IS NOT NULL{
+                $$=(expr_condition*)calloc(1,sizeof(expr_condition));
+                $$->column=$1;
+                $$->op=OPER_NOTNULL;
+            }
             ;
 
 compare_op: '=' {$$ = OPER_EQU;}
