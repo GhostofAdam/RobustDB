@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#include "type_def.hpp"
+#include "DBMS.hpp"
 
 void report_sql_error(const char *error_name, const char *msg);
 void execute_desc_tables(const char *table_name);

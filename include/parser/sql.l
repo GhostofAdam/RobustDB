@@ -6,7 +6,7 @@ Inspired by: https://raw.githubusercontent.com/thinkpad20/sql/master/src/lex/sql
 
 %{
 #include <ctype.h>
-#include "type_def.h"
+#include "parser/type_def.hpp"
 #include "sql.tab.h"
 
 #ifndef __linux__

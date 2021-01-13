@@ -1,3 +1,6 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
 /** \file btree_map.h
  * Contains the specialized B+ tree template class btree_map
  */
@@ -617,3 +620,6 @@ public:
 } // namespace stx
 
 #endif // _STX_BTREE_MAP_H_
+#ifdef __cplusplus
+}  // end extern "C"
+#endif

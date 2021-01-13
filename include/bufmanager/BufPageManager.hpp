@@ -98,7 +98,7 @@ public:
 	 */
 	BufType* access(int index) {
 		if (index == last) {
-			return;
+			return nullptr;
 		}
 		replace->access(index);
 		last = index;

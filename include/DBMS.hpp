@@ -1,5 +1,4 @@
 #include "Database.hpp"
-#include "parser/Expression.hpp"
 
 enum IDX_TYPE {
     IDX_NONE, IDX_LOWWER, IDX_UPPER, IDX_EQUAL
@@ -8,7 +7,6 @@ using table_value_t = std::pair<std::string, expr_node>;
 
 class DBMS{
 public:
-    DBMS();
     static DBMS* getInstance();
     void exit();
     void switchToDB(const char *name);
@@ -17,8 +15,8 @@ public:
     void dropTable(const char *table);
     void showTables();
     void selectRow(const linked_list *tables, const linked_list *column_expr, condition_tree *condition);
-    void updateRow(const char *table, expr_node *condition, column_ref *column, expr_node *eval);
-    void deleteRow(const char *table, expr_node *condition);
+    void updateRow(const char *table, condition_tree *condition, column_ref *column, expr_node *eval);
+    void deleteRow(const char *table, condition_tree *condition);
     void insertRow(const char *table, const linked_list *columns, const linked_list *values);
     void addColumn(const char *table, struct column_defs *col_def);
     void dropColumn(const char *table, struct column_ref *tb_col);
@@ -37,13 +35,11 @@ private:
         IDX_NONE, IDX_LOWWER, IDX_UPPER, IDX_EQUAL
     };
     Database *current;
+    DBMS();
     std::vector<char *> pendingFree;
     std::multimap<std::string, table_value_t> column_cache;
-    DBMS();
     bool requireDbOpen();
     void printReadableException(int err);
-    void printExprVal(const Expression &val);
-    bool convertToBool(const Expression &val);
     expr_node dbTypeToExprType(char *data, ColumnType type);
     char *ExprTypeToDbType(const expr_node *val, term_type desiredType);
     term_type ColumnTypeToExprType(const ColumnType& type);
@@ -52,7 +48,6 @@ private:
     void freeCachedColumns();
     IDX_TYPE checkIndexAvailability(Table *tb, RID_t *rid_l, RID_t *rid_u, int *col, condition_tree *condition);
     RID_t nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t rid_u);
-    expr_node* findJoinCondition(expr_node *condition);
     using CallbackFunc = std::function<void(Table *, RID_t)>;
     bool iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, CallbackFunc callback);
     void iterateRecords(linked_list *tables, expr_node *condition, CallbackFunc callback);

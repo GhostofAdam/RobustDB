@@ -1,3 +1,6 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
 /** \file btree_set.h
  * Contains the specialized B+ tree template class btree_set
  */
@@ -600,3 +603,6 @@ public:
 } // namespace stx
 
 #endif // _STX_BTREE_SET_H_
+#ifdef __cplusplus
+}  // end extern "C"
+#endif

@@ -1,6 +1,7 @@
 #include "common.hpp"
 #include "Index.hpp"
 #include "bufmanager/BufPageManager.hpp"
+#include "parser/type_def.hpp"
 
 struct Check {
     int col;
@@ -91,7 +92,6 @@ public:
     std::string genCheckError(int checkId);
     RID_t selectIndexLowerBoundEqual(int col, const char *data);
     RID_t selectIndexLowerBound(int col, const char *data);
-    RID_t selectIndexLowerBoundEqual(int col, const char *data);
     RID_t selectIndexLowerBoundNull(int col);
     RID_t selectIndexNext(int col);
     RID_t selectIndexNextEqual(int col);

@@ -6,68 +6,10 @@
 #include <cstring>
 #include <iomanip>
 #include <sstream>
-#include "type_def.hpp"
 #include "DBMS.hpp"
 
 DBMS::DBMS() {
     current = new Database();
-}
-
-void DBMS::printReadableException(int err) {
-    printf("Exception: ");
-    printf("%s\n", Exception2String[err]);
-}
-
-void DBMS::printExprVal(const Expression &val) {
-    switch (val.type) {
-        case TERM_INT:
-            printf("%d", val.value.value_i);
-            break;
-        case TERM_BOOL:
-            printf("%s", val.value.value_b ? "TRUE" : "FALSE");
-            break;
-        case TERM_FLOAT:
-            printf("%.2f", val.value.value_f);
-            break;
-        case TERM_STRING:
-            printf("'%s'", val.value.value_s);
-            break;
-        case TERM_DATE: {
-            auto time = (time_t) val.value.value_i;
-            auto tm = std::localtime(&time);
-            std::cout << std::put_time(tm, DATE_FORMAT);
-            break;
-        }
-        case TERM_NULL:
-            printf("NULL");
-            break;
-        default:
-            break;
-    }
-}
-
-bool DBMS::convertToBool(const Expression &val) {
-    bool t = false;
-    switch (val.type) {
-        case TERM_INT:
-            t = val.value.value_i != 0;
-            break;
-        case TERM_BOOL:
-            t = val.value.value_b;
-            break;
-        case TERM_FLOAT:
-            t = val.value.value_f != 0;
-            break;
-        case TERM_STRING:
-            t = strlen(val.value.value_s) != 0;
-            break;
-        case TERM_NULL:
-            t = false;
-            break;
-        default:
-            break;
-    }
-    return t;
 }
 
 expr_node DBMS::dbTypeToExprType(char *data, ColumnType type) {
@@ -178,32 +120,6 @@ void DBMS::freeCachedColumns() {
     pendingFree.clear();
 }
 
-
-RID_t DBMS::nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t rid_u) {
-    if (type == IDX_EQUAL) {
-        auto nxt = tb->selectIndexNext(col);
-        return rid == rid_u ? (RID_t) -1 : nxt; // current rid equals upper bound
-    } else if (type == IDX_UPPER)
-        return tb->selectReveredIndexNext(col);
-    else if (type == IDX_LOWWER)
-        return tb->selectIndexNext(col);
-    else {
-        return tb->getNext(rid);
-    }
-}
-
-
-expr_node *DBMS::findJoinCondition(expr_node *condition) {
-    expr_node *cond = nullptr;
-    if (condition->left->node_type == TERM_COLUMN && condition->right->node_type == TERM_COLUMN) {
-        cond = condition;
-    } else if (condition->left->node_type == TERM_NONE) {
-        cond = findJoinCondition(condition->left);
-    } else if (!cond && condition->right->node_type == TERM_NONE) {
-        cond = findJoinCondition(condition->right);
-    }
-    return cond;
-}
 
 
 
@@ -488,7 +404,7 @@ bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
                 case OPER_EQU:
                     return strcasecmp(ret.literal_s, condition->node->value->literal_s) == 0;
                 case OPER_NEQ:
-                    return strcasecmp(ret.literal_s, condition->node->value->literal_s) != 0
+                    return strcasecmp(ret.literal_s, condition->node->value->literal_s) != 0;
                 case OPER_ISNULL:
                     return false;
             }
@@ -515,7 +431,7 @@ bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
         return right || left;
     }
     else{
-        printf("wrong condition tree!\n")
+        printf("wrong condition tree!\n");
         assert(0);
         return false;
     }
@@ -571,7 +487,7 @@ DBMS::IDX_TYPE DBMS::checkIndexAvailability(Table *tb, RID_t *rid_l, RID_t *rid_
     //     condition = condition->left;
     if (!(condition && condition->node))
         return IDX_NONE;
-    auto col_name = condition->node->column->name;
+    auto col_name = condition->node->column->column;
     int c = tb->getColumnID(col_name);
     if (c == -1 || !tb->hasIndex(c))
         return IDX_NONE;
@@ -616,7 +532,7 @@ RID_t DBMS::nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t ri
 
 
 
-void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column, expr_node *eval) {
+void DBMS::updateRow(const char *table, condition_tree *condition, column_ref *column, expr_node *eval) {
     Table *tb;
     if (!current->isOpen()){
         printf("Database is not open!");
@@ -629,6 +545,7 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
 
     int col_to_update;
     col_to_update = tb->getColumnID(column->column);
+    auto colType = tb->getColumnType(col_to_update);
     if (col_to_update == -1) {
         printf("Column %s not found\n", column->column);
         return;
@@ -643,7 +560,7 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
     printf("%d rows updated.\n", (int )resutls.size());
 }
 
-void DBMS::deleteRow(const char *table, expr_node *condition) {
+void DBMS::deleteRow(const char *table, condition_tree *condition) {
     std::vector<RID_t> toBeDeleted;
     Table *tb;
     if (!current->isOpen()){
@@ -830,10 +747,10 @@ void DBMS::addConstraint(const char *table, const char *cons_name, table_constra
         printf("Foreign Table %s not found\n", cons->foreign_table_name);
         return;
     }
-    int col_id = tb->getColumnID(cons->column_name);
-    int foreign_table_id = current->getTableId(cons->foreign_table_name);
-    int foreign_col_id = tb_cons->getColumnID(cons->foreign_column_name);
-    tb->addForeignKeyConstraint(col_id, foreign_table_id, foreign_col_id);
+    // int col_id = tb->getColumnID(cons->column_name);
+    // int foreign_table_id = current->getTableId(cons->foreign_table_name);
+    // int foreign_col_id = tb_cons->getColumnID(cons->foreign_column_name);
+    // tb->addForeignKeyConstraint(col_id, foreign_table_id, foreign_col_id);
 }
 
 void DBMS::dropForeign(const char *table) {
@@ -891,7 +808,7 @@ void DBMS::descTable(const char *name) {
         printf("Database is not open!\n");
         return;
     }
-    Table *tb = current->getTableByName(name);
+    tb = current->getTableByName(name);
     if (!tb) {
         printf("Table name %s not found\n", name);
         return;

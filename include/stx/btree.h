@@ -1,3 +1,6 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
 /**
  * \file include/stx/btree.h
  * Contains the main B+ tree implementation template class btree.
@@ -3981,3 +3984,6 @@ private:
 } // namespace stx
 
 #endif // _STX_BTREE_H_
+#ifdef __cplusplus
+}  // end extern "C"
+#endif
