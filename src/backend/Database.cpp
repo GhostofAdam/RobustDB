@@ -34,16 +34,19 @@ void Database::open(const string &name) {
 void Database::close() {
     assert(this->ready);
     FILE *file = fopen((this->dbName + ".db").c_str(), "w");
-    fprintf(file, "%zu\n", this->table.size());
+    //fprintf(file, "%zu\n", this->table.size());
+    
     for (size_t i = 0; i < this->table.size(); i++) {
         this->table[i]->close();
         delete this->table[i];
         this->table[i] = nullptr;
-        fprintf(file, "%s\n", this->tableName[i].c_str());
+        //fprintf(file, "%s\n", this->tableName[i].c_str());
     }
+    
     this->table.clear();
     fclose(file);
     this->ready = false;
+    
 }
 
 void Database::drop() {
@@ -70,6 +73,7 @@ void Database::create(const string &name) {
 
 Table *Database::createTable(const std::string &name) {
     assert(ready);
+    tableSize++;
     tableName.push_back(name);
     table.push_back(new Table());
     table.back()->create((dbName + "." + name + ".table").c_str());
@@ -79,7 +83,7 @@ Table *Database::createTable(const std::string &name) {
 void Database::dropTableByName(const std::string &name) {
     int p = -1;
     for (size_t i = 0; i < table.size(); i++)
-        if (tableName[i] == name) {
+        if (!tableName[i].compare(name)) {
             p = (int) i;
             break;
         }
@@ -96,9 +100,9 @@ void Database::dropTableByName(const std::string &name) {
     remove((dbName + "." + name + ".table").c_str());
 }
 
-int Database::getTableId(const char *name) {
+int Database::getTableId(const string &name) {
     for (size_t i = 0; i < tableSize; i++)
-        if (tableName[i] == name) {
+        if (!tableName[i].compare(name)) {
             return i;
         }
 }
@@ -108,11 +112,12 @@ Table *Database::getTableById(const size_t id) {
     else return nullptr;
 }
 
-Table *Database::getTableByName(const char* name) {
-    for (size_t i = 0; i < tableSize; i++)
-        if (tableName[i] == name) {
+Table *Database::getTableByName(const string & name) {
+    for (size_t i = 0; i < tableSize; i++){
+        if (!tableName[i].compare(name)) {
             return table[i];
         }
+    }
     return nullptr;
 }
 

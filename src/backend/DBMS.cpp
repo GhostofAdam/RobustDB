@@ -140,6 +140,7 @@ DBMS *DBMS::getInstance() {
 }
 
 void DBMS::exit() {
+    printf("exit\n");
     if (current->isOpen())
         current->close();
 }
@@ -191,17 +192,18 @@ void DBMS::createTable(const table_def *table) {
                 assert(0==1);
                 break;
         }
+        column = (*i);
         int id = tab->addColumn(column->name, type,
                                  (bool) column->flags->flags & COLUMN_FLAG_NOTNULL,
                                  (bool) column->flags->flags & COLUMN_FLAG_DEFAULT,
                                  column->flags->default_value);
-        succeed = id == -1;
+        succeed = id != -1;
         if(!succeed){
             printf("Column %s exits\n", column->name);
             break;
         }
     }
-
+    
     auto *cons_list = table->constraints;
     while (cons_list){
         table_constraint *cons = (table_constraint *) (cons_list->data);
@@ -662,7 +664,7 @@ void DBMS::addColumn(const char *table, struct column_defs *col_def) {
                               (ColumnType)col_def->type,
                               (bool) col_def->flags & COLUMN_FLAG_NOTNULL,
                               (bool) col_def->flags & COLUMN_FLAG_DEFAULT,
-                              nullptr);
+                              col_def->flags->default_value);
         col_def = col_def->next;
         if (id == -1) {
             printf("Column %s exits\n", col_def->name);

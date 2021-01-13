@@ -211,20 +211,19 @@ alterStmt : ALTER TABLE IDENTIFIER ADD column_dec{ execute_add_column($3,$5); }
 
 fieldList: column_dec {
                 $$ = (table_field*)malloc(sizeof(table_field));
-                $$->columns = (linked_list*)calloc(1,sizeof(linked_list));
-                $$->columns->data = $1;
+                $$->columns = $1;
+                $$->constraints = NULL;
             }
             | tb_opt_dec {
                 $$ = (table_field*)malloc(sizeof(table_field));
                 $$->constraints = (linked_list*)calloc(1,sizeof(linked_list));
+                $$->columns = NULL;
                 $$->constraints->data = $1;
             }
             | column_dec ',' fieldList  {
                 $$ = $3;
-                linked_list* temp = (linked_list*)calloc(1,sizeof(linked_list));
-                temp->data = $1;
-                temp->next = $$->columns;
-                $$->columns = temp;
+                $1->next = $$->columns;
+                $$->columns = $1;
                 }
             | tb_opt_dec ',' fieldList {
                 $$ = $3;
@@ -244,18 +243,21 @@ column_dec: IDENTIFIER column_type column_constraint {
             ;
 
 column_constraint: NOT TOKEN_NULL {
-            $$ = (column_constraint*)malloc(sizeof(column_constraint));
-            $$->flags = COLUMN_FLAG_NOTNULL;
+                $$ = (column_constraint*)malloc(sizeof(column_constraint));
+                $$->flags = COLUMN_FLAG_NOTNULL;
             }
             | DEFAULT value {
-            $$ = (column_constraint*)malloc(sizeof(column_constraint));
-            $$->flags = COLUMN_FLAG_DEFAULT;
-            $$->default_value = $2;
+                $$ = (column_constraint*)malloc(sizeof(column_constraint));
+                $$->flags = COLUMN_FLAG_DEFAULT;
+                $$->default_value = $2;
             }
             | NOT TOKEN_NULL DEFAULT value{
-            $$ = (column_constraint*)malloc(sizeof(column_constraint));
-            $$->flags = COLUMN_FLAG_DEFAULT | COLUMN_FLAG_NOTNULL;
-            $$->default_value = $4;
+                $$ = (column_constraint*)malloc(sizeof(column_constraint));
+                $$->flags = COLUMN_FLAG_DEFAULT | COLUMN_FLAG_NOTNULL;
+                $$->default_value = $4;
+            }
+            | {
+                $$ = (column_constraint*)malloc(sizeof(column_constraint));
             }
             ;
 

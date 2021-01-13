@@ -123,6 +123,7 @@ public:
 		dirty[index] = false;
 		replace->free(index);
 		hash->remove(index);
+		list->erase(index);
 	}
 	/*
 	 * @函数名writeBack
@@ -138,6 +139,7 @@ public:
 		}
 		replace->free(index);
 		hash->remove(index);
+		list->erase(index);
 	}
 	/*
 	 * @函数名close

@@ -125,6 +125,7 @@ void Table::open(const char* tableName) {
 void Table::close() {
     assert(this->ready);
     storeIndex();
+    
     int index = BufPageManager::getInstance().getPage(fileID, 0);   // 找到文件首页对应的缓存页面
     memcpy(BufPageManager::getInstance().getBuf(index), &head, sizeof(TableHead));  // head内容拷贝到文件中
     BufPageManager::getInstance().access(index);    // 标记该页被访问过(LRU)
