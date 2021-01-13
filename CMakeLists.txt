@@ -1,20 +1,24 @@
-# CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+cmake_minimum_required (VERSION 3.1)
 
+project(RobustDB)
 
-PROJECT(robust_db)
+add_subdirectory(src/parser)
 
-set(CMAKE_CXX_FLAGS "--std=c++11 -O3 -Wall -Wextra ${CMAKE_CXX_FLAGS}")
-
-# include
-include_directories(
-include
+set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BINARY_DIR build)
+set(EXECUTABLE_OUTPUT_PATH build)
+set(SOURCE
+	${SOURCE}
+	src/backend/Database.cpp
+    src/backend/DBMS.cpp
+    src/backend/Index.cpp
+    src/backend/Table.cpp
 )
-# source
-FILE(GLOB_RECURSE src_files "src/*.cpp")
-set (main_cpp "src/main.cpp")
 
-# target
-add_library(RobustDB SHARED ${src_files})
-ADD_EXECUTABLE(main ${main_cpp})
-TARGET_LINK_LIBRARIES(main RobustDB)
+set(HEADERS
+	${HEADERS}
+)
 
+add_library(${CMAKE_PROJECT_NAME}_lib ${SOURCE} ${HEADERS})
+add_executable(${CMAKE_PROJECT_NAME} src/main.cpp)
+target_link_libraries(${CMAKE_PROJECT_NAME} sql_parser ${CMAKE_PROJECT_NAME}_lib)
