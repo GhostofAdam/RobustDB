@@ -7,7 +7,7 @@ Inspired by: https://raw.githubusercontent.com/thinkpad20/sql/master/src/lex/sql
 %{
 #include <ctype.h>
 #include "type_def.hpp"
-#include "sql.tab.hpp"
+#include "sql.tab.h"
 
 #ifndef __linux__
 char *strndup (const char *s, size_t n)
@@ -57,7 +57,6 @@ references|REFERENCES               { return REFERENCES; }
 key|KEY                             { return KEY; }
 index|INDEX                         { return INDEX; }
 default|DEFAULT                     { return DEFAULT; }
-check|CHECK                         { return CHECK; }
 not|NOT                             { return NOT; }
 null|NULL                           { return TOKEN_NULL; }
 and|AND                             { return AND; }
@@ -73,32 +72,15 @@ float|FLOAT                         { return FLOAT; }
 char|CHAR                           { return CHAR; }
 varchar|VARCHAR                     { return VARCHAR; }
 date|DATE                           { return DATE; }
-join|JOIN                           { return JOIN; }
-inner|INNER                         { return INNER; }
-outer|OUTER                         { return OUTER; }
-full|FULL                           { return FULL; }
-left|LEFT                           { return LEFT; }
-right|RIGHT                         { return RIGHT; }
 values|VALUES                       { return VALUES; }
-asc|ASC                             { return ASC; }
 desc|DESC                           { return DESC; }
-order|ORDER                         { return ORDER; }
-by|BY                               { return BY; }
 unique|UNIQUE                       { return UNIQUE; }
-in|IN                               { return IN; }
 like|LIKE                           { return LIKE; }
 is|IS                               { return IS; }
-count|COUNT                         { return COUNT; }
-sum|SUM                             { return SUM; }
-min|MIN                             { return MIN; }
-max|MAX                             { return MAX; }
-avg|AVG                             { return AVG; }
 on|ON                               { return ON; }
 using|USING                         { return USING; }
 true|TRUE                           { return TRUE; }
 false|FALSE                         { return FALSE; }
-group|GROUP                         { return GROUP; }
-distinct|DISTINCT                   { return DISTINCT; }
 exit|EXIT                           { return EXIT; }
 alter|ALTER                         { return ALTER; }
 add|ADD                             { return ADD; }

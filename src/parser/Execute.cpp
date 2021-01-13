@@ -1,8 +1,8 @@
 #include <cstdio>
 #include <cstdlib>
-#include "Execute.hpp"
+#include "Execute.h"
 
-#include "../bakcend/DBMS.hpp"
+#include "../backend/DBMS.hpp"
 
 void free_expr(expr_node* node){
     
@@ -200,4 +200,11 @@ void execute_drop_primary_key(const char *tb_name) {
 
 void execute_drop_foreign_key(const char *tb_name){
     DBMS::getInstance()->dropForeign(tb_name);
+}
+void execute_rename_table(const char *old_table, const char *new_table){
+
+}
+
+void execute_drop_foreign_key_byname(const char *tb_name, const char *key_name){
+    
 }

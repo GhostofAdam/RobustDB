@@ -34,7 +34,7 @@
 #ifndef _STX_BTREE_MULTIMAP_HPP_
 #define _STX_BTREE_MULTIMAP_HPP_
 
-#include <stx/btree.hpp>
+#include "btree.hpp"
 
 namespace stx {
 

@@ -3,12 +3,12 @@ find_package(BISON REQUIRED)
 
 BISON_TARGET(sql_yy
 	${CMAKE_CURRENT_SOURCE_DIR}/sql.y
-	${CMAKE_CURRENT_BINARY_DIR}/sql.tab.cpp
+	${CMAKE_CURRENT_BINARY_DIR}/sql.tab.c
 )
 
 FLEX_TARGET(sql_lex
 	${CMAKE_CURRENT_SOURCE_DIR}/sql.l
-	${CMAKE_CURRENT_BINARY_DIR}/sql.yy.cpp
+	${CMAKE_CURRENT_BINARY_DIR}/sql.yy.c
 )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -31,6 +31,6 @@ set(SOURCE
 set(HEADERS
 	${HEADERS}
 	${CMAKE_CURRENT_SOURCE_DIR}/type_def.hpp
-	${CMAKE_CURRENT_SOURCE_DIR}/Execute.hpp
+	${CMAKE_CURRENT_SOURCE_DIR}/Execute.h
 	PARENT_SCOPE
 )

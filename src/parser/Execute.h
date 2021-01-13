@@ -1,5 +1,11 @@
 #ifndef EXECUTE_H__
 #define EXECUTE_H__
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "type_def.hpp"
 
 
@@ -25,9 +31,11 @@ void execute_drop_column(const char *tb_name, struct column_ref *tb_col);
 void execute_rename_table(const char *old_table, const char *new_table);
 void execute_add_primary_key(const char *tb_name, const char *col);
 void execute_add_constraint(const char *tb_name, const char *cons_name, table_constraint *cons);
-void execute_drop_primary_key_byname(const char *tb_name, const char *col);
-void execute_drop_primary_key(const char *tb_name, const char *col);
-void execute_drop_foreign_key(const char *tb_name);
-
+void execute_drop_primary_key_byname(const char *tb_name, const char *key_name);
+void execute_drop_primary_key(const char *tb_name);
+void execute_drop_foreign_key_byname(const char *tb_name, const char *key_name);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

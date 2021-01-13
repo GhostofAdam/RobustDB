@@ -5,12 +5,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "Execute.hpp"
+#include "Execute.h"
 #include "type_def.hpp"
 
 int yyerror(const char *str);
 
-#include "sql.yy.cpp"
+#include "sql.yy.c"
 
 %}
 %union {
@@ -26,8 +26,13 @@ int yyerror(const char *str);
   select_argu* select_argu;
   delete_argu* delete_argu;
   update_argu* update_argu;
+  index_argu* index_argu;
   table_field* t_field;
   table_constraint* t_constraint;
+  condition_tree* condition_tree;
+  expr_condition* expr_condition;
+  column_constraint* column_constraint;
+
 }
 
 %token TRUE FALSE AND OR NEQ GEQ LEQ NOT
@@ -36,7 +41,7 @@ int yyerror(const char *str);
 %token DESC
 %token UNIQUE ON VALUES
 %token TABLE
-%token CREATE SELECT WHERE INSERT INTO FROM ADD ALTER CHANGE CONSTRAINT LIKE NULL RENAME TABLES TO
+%token CREATE SELECT WHERE INSERT INTO FROM ADD ALTER CHANGE CONSTRAINT LIKE RENAME TABLES TO
 %token DEFAULT PRIMARY FOREIGN KEY REFERENCES
 %token DELETE SHOW
 %token IDENTIFIER FLOAT DATE EXIT
@@ -49,8 +54,9 @@ int yyerror(const char *str);
 %type <val_s> create_db_stmt drop_db_stmt use_db_stmt drop_tb_stmt
 %type <val_f> FLOAT_LITERAL
 %type <t_field> fieldList
-%type <ref_column> column_ref
-%type <val_i> show_stmt column_type column_constraint
+%type <ref_column> column_ref alterStmt
+%type <column_constraint> column_constraint
+%type <val_i> show_stmt column_type
 %type <val_i> INT_LITERAL compare_op logic_op
 %type <def_column> column_dec
 %type <def_table> create_tb_stmt
@@ -63,7 +69,7 @@ int yyerror(const char *str);
 %type <select_argu> select_stmt
 %type <delete_argu> delete_stmt
 %type <update_argu> update_stmt
-%type <ref_column> drop_idx_stmt create_idx_stmt
+%type <index_argu> drop_idx_stmt create_idx_stmt
 
 
 %start program
@@ -179,10 +185,10 @@ drop_idx_stmt: DROP INDEX IDENTIFIER{
 alterStmt : ALTER TABLE IDENTIFIER ADD column_dec{ execute_add_column($3,$5); }
 		| ALTER TABLE IDENTIFIER DROP IDENTIFIER{ execute_drop_column($3,$5); }
 		| ALTER TABLE IDENTIFIER CHANGE IDENTIFIER column_dec{
-            temp=(column_ref*)malloc(sizeof(column_ref));
-            temp->table=$3;
-            temp->column=$5;
-            execute_drop_column(temp,$5);
+            $$=(column_ref*)malloc(sizeof(column_ref));
+            $$->table=$3;
+            $$->column=$5;
+            execute_drop_column($$,$5);
         }
 		| ALTER TABLE IDENTIFIER RENAME TO IDENTIFIER{
             execute_rename_table($3, $6);
@@ -200,31 +206,29 @@ alterStmt : ALTER TABLE IDENTIFIER ADD column_dec{ execute_add_column($3,$5); }
         }   
 		
 		| ALTER TABLE IDENTIFIER DROP FOREIGN KEY IDENTIFIER{
-            execute_drop_foreign_key($3, $7);
+            execute_drop_foreign_key_byname($3, $7);
         }
 
 fieldList: column_dec {
                 $$ = (table_field*)malloc(sizeof(table_field));
-                temp = (linked_list*)calloc(sizeof(linked_list));
-                temp->data = $1;
-                $$->columns = temp;
+                $$->columns = (linked_list*)calloc(1,sizeof(linked_list));
+                $$->columns->data = $1;
             }
             | tb_opt_dec {
                 $$ = (table_field*)malloc(sizeof(table_field));
-                temp = (linked_list*)calloc(sizeof(linked_list));
-                temp->data = $1;
-                $$->constraints = temp;
+                $$->constraints = (linked_list*)calloc(1,sizeof(linked_list));
+                $$->constraints->data = $1;
             }
             | column_dec ',' fieldList  {
                 $$ = $3;
-                temp = (linked_list*)calloc(sizeof(linked_list));
+                linked_list* temp = (linked_list*)calloc(1,sizeof(linked_list));
                 temp->data = $1;
                 temp->next = $$->columns;
                 $$->columns = temp;
                 }
             | tb_opt_dec ',' fieldList {
                 $$ = $3;
-                temp = (linked_list*)calloc(sizeof(linked_list));
+                linked_list* temp = (linked_list*)calloc(1,sizeof(linked_list));
                 temp->data = $1;
                 temp->next = $$->constraints;
                 $$->constraints = temp;
@@ -234,7 +238,7 @@ column_dec: IDENTIFIER column_type column_constraint {
                 $$ = (column_defs*)malloc(sizeof(column_defs));
                 $$->name = $1;
                 $$->type = $2;
-                $$->constraint = $3;
+                $$->flags = $3;
                 $$->next = NULL;
             }
             ;
@@ -296,12 +300,13 @@ expr_list:  value {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
            ;
 
 select_expr_list:  column_ref {
-                        $$ = (linked_list)calloc(1,sizeof(linked_list));
+                        $$ = (linked_list*)calloc(1,sizeof(linked_list));
                         $$->data = $1;
                     }
-                |select_expr_list',' column_ref{
+                |select_expr_list ',' column_ref{
+                        $$ = (linked_list*)calloc(1,sizeof(linked_list));
                         $1->next = $3;
-                        $$ = $1;
+                        $$->data = $1;
                     }
 
 table_columns: table_name {$$=(insert_argu*)calloc(1,sizeof(insert_argu));$$->table=$1;}
@@ -332,14 +337,14 @@ condition_term: column_ref compare_op value {
                 $$=(expr_condition*)calloc(1,sizeof(expr_condition));
                 $$->column=$1;
                 $$->value=$3;
-                $$->op=$3;
+                $$->op=$2;
             }
-            | column_ref IS NULL{
+            | column_ref IS TOKEN_NULL{
                 $$=(expr_condition*)calloc(1,sizeof(expr_condition));
                 $$->column=$1;
                 $$->op=OPER_ISNULL;
             }
-            | column_ref IS NOT NULL{
+            | column_ref IS NOT TOKEN_NULL{
                 $$=(expr_condition*)calloc(1,sizeof(expr_condition));
                 $$->column=$1;
                 $$->op=OPER_NOTNULL;

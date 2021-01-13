@@ -72,7 +72,7 @@ typedef struct column_ref {
 } column_ref;
 
 typedef struct column_constraint{
-    unsigned int flags;
+    int flags;
     struct expr_node* default_value;
 } column_constraint;
 
@@ -114,8 +114,8 @@ typedef struct expr_condition {
 } expr_condition;
 
 typedef struct condition_tree{
-    condition_tree* right;
-    condition_tree* left;
+    struct condition_tree* right;
+    struct condition_tree* left;
     expr_condition* node;
     operator_type op;
 } condition_tree;
