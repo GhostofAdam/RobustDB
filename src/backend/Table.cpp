@@ -113,8 +113,7 @@ void Table::open(const char* tableName) {
     this->permID = BufPageManager::getFileManager().getFilePermID(fileID);
     RegisterManager::getInstance().checkIn(permID, this);
     int index = BufPageManager::getInstance().getPage(fileID, 0);   // 为文件首页在缓存中找到对应缓存页面
-    memcpy(&head, BufPageManager::getInstance().getBuf(index), sizeof(TableHead));  // 文件首页的缓存拷贝到head
-    BufPageManager::getInstance().access(index);    // 标记该页被访问过(LRU)
+    memcpy(&head, BufPageManager::getInstance().access(index), sizeof(TableHead));
     this->ready = true;
     this->buf = nullptr;
     for (auto &col: this->colIndex)
@@ -125,11 +124,9 @@ void Table::open(const char* tableName) {
 void Table::close() {
     assert(this->ready);
     storeIndex();
-    
-    int index = BufPageManager::getInstance().getPage(fileID, 0);   // 找到文件首页对应的缓存页面
-    memcpy(BufPageManager::getInstance().getBuf(index), &head, sizeof(TableHead));  // head内容拷贝到文件中
-    BufPageManager::getInstance().access(index);    // 标记该页被访问过(LRU)
-    BufPageManager::getInstance().markDirty(index); // 标记该页dirty
+    int index = BufPageManager::getInstance().getPage(fileID, 0);
+    memcpy(BufPageManager::getInstance().access(index), &head, sizeof(TableHead));
+    BufPageManager::getInstance().markDirty(index);
     RegisterManager::getInstance().checkOut(permID);
     BufPageManager::getInstance().closeFile(fileID);
     BufPageManager::getFileManager().closeFile(fileID);
@@ -190,7 +187,7 @@ RID_t Table::getNext(RID_t rid) {
         id = (rid % PAGE_SIZE) / head.recordByte;
     }
     int index = BufPageManager::getInstance().getPage(fileID, page_id);
-    char *page = (char*)BufPageManager::getInstance().access(index);
+    char *page =    BufPageManager::getInstance().access(index);
 
     while (true) {
         id++;
@@ -198,7 +195,7 @@ RID_t Table::getNext(RID_t rid) {
             page_id++;
             if (page_id >= head.pageTot) return (RID_t) -1;
             index = BufPageManager::getInstance().getPage(fileID, page_id);
-            page = (char*)BufPageManager::getInstance().access(index);
+            page = BufPageManager::getInstance().access(index);
             id = 0;
         }
         if (getFooter(page, id)) return (RID_t) page_id * PAGE_SIZE + id * head.recordByte;
@@ -215,8 +212,7 @@ char *Table::getRecordTempPtr(RID_t rid) {
     int offset = rid % PAGE_SIZE;
     assert(1 <= pageID && pageID < head.pageTot);
     auto index = BufPageManager::getInstance().getPage(fileID, pageID);
-    char* page = (char *)BufPageManager::getInstance().getBuf(index);   // 页指针
-    BufPageManager::getInstance().access(index);    // 标记访问
+    char* page = BufPageManager::getInstance().access(index);
     assert(getFooter(page, offset / head.recordByte));
     return page + offset;
 }
@@ -426,7 +422,7 @@ bool Table::insert2Record(){
     BufPageManager::getInstance().markDirty(index);
     inverseFooter(page, offset / head.recordByte);
     for (int i = 0; i < head.columnTot; i++) insertColIndex(rid, i);
-    return false;
+    return true;
 }
     
 int Table::dropColumn(const char *name) {
@@ -919,7 +915,7 @@ std::string Table::modifyRecord(RID_t rid, int col, char *data) {
     int pageID = rid / PAGE_SIZE;
     int offset = rid % PAGE_SIZE;
     int index = BufPageManager::getInstance().getPage(fileID, pageID);
-    char *page = (char*)BufPageManager::getInstance().access(index);
+    char *page = BufPageManager::getInstance().access(index);
     char *record = page + offset;
     std::string err = loadRecordToTemp(rid, page, offset);
     if (!err.empty()) {

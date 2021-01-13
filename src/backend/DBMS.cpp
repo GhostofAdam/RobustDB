@@ -172,7 +172,7 @@ void DBMS::createTable(const table_def *table) {
         column_vec.push_back(column);
         column = column->next;
     }
-    std::reverse(column_vec.begin(),column_vec.end());
+    //std::reverse(column_vec.begin(),column_vec.end());
     for (auto i = column_vec.begin(); i != column_vec.end(); ++i) {
         auto type = (ColumnType) 0;
         switch ((*i)->type) {

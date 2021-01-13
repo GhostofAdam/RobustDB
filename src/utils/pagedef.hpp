@@ -14,26 +14,31 @@ extern "C" {
 #endif
 
 
-/*
- * 一个页面中的字节数
- */
+//----------------------FILE---------------------------------------
 #define PAGE_SIZE 8192
-/*
- * 一个页面中的整数个数
- */
-#define PAGE_INT_NUM 2048
-/*
- * 页面字节数以2为底的指数
- */
-#define PAGE_SIZE_IDX 13
-#define MAX_FMT_INT_NUM 128
-//#define BUF_PAGE_NUM 65536
+#define PAGE_IDX 13
 #define MAX_FILE_NUM 128
-#define MAX_TYPE_NUM 256
-/*
- * 缓存中页面个数上限
- */
-#define CAP 60000
+#define BUF_CAPACITY 60000
+#define PAGE_FOOTER_SIZE 64
+#define MAX_REC_PER_PAGE 512
+
+
+//----------------------TABLE--------------------------------------
+#define MAX_COLUMN_SIZE 32
+// both table name and column name
+#define MAX_NAME_LEN 128
+#define MAX_DATA_SIZE 3000
+#define MAX_CHECK 16
+#define MAX_FOREIGN_KEY 24
+
+//----------------------Database-----------------------------------------
+#define MAX_TABLE_SIZE 32
+
+#define DATE_FORMAT "%Y-%m-%d"
+
+using RID_t = unsigned int;
+#define UNUSED(x) (void)(x)
+
 /*
  * hash算法的模
  */

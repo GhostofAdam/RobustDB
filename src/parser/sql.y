@@ -129,7 +129,10 @@ desc_stmt: DESC table_name { $$=$2; }
 
 insert_stmt: INSERT INTO table_name VALUES value_list {
             $$ = (insert_argu*) malloc(sizeof(insert_argu));
-            $$->table=$3;$$->values=$5;}
+            $$->columns = NULL;
+            $$->table=$3;
+            $$->values=$5;
+            }
             ;
         
 delete_stmt: DELETE FROM table_name where_clause {
@@ -219,6 +222,7 @@ fieldList: column_dec {
                 $$->constraints = (linked_list*)calloc(1,sizeof(linked_list));
                 $$->columns = NULL;
                 $$->constraints->data = $1;
+                $$->constraints->next = NULL;
             }
             | column_dec ',' fieldList  {
                 $$ = $3;
@@ -245,6 +249,7 @@ column_dec: IDENTIFIER column_type column_constraint {
 column_constraint: NOT TOKEN_NULL {
                 $$ = (column_constraint*)malloc(sizeof(column_constraint));
                 $$->flags = COLUMN_FLAG_NOTNULL;
+                $$->default_value = NULL;
             }
             | DEFAULT value {
                 $$ = (column_constraint*)malloc(sizeof(column_constraint));
@@ -257,7 +262,7 @@ column_constraint: NOT TOKEN_NULL {
                 $$->default_value = $4;
             }
             | {
-                $$ = (column_constraint*)malloc(sizeof(column_constraint));
+                $$ = NULL;
             }
             ;
 
@@ -265,6 +270,8 @@ tb_opt_dec: PRIMARY KEY '(' column_list ')' {
                 $$=(table_constraint*)calloc(1,sizeof(table_constraint));
                 $$->type = CONSTRAINT_PRIMARY_KEY;
                 $$->column_list = $4;
+                $$->foreign_table_name = NULL;
+                $$->foreign_column_list = NULL;
             }
             |FOREIGN KEY '(' column_list ')' REFERENCES IDENTIFIER '(' column_list ')'{
                 $$=(table_constraint*)calloc(1,sizeof(table_constraint));
