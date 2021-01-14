@@ -54,8 +54,8 @@ public:
         int file = fileList[fileID];
         off_t offset = pageID;
         offset <<= PAGE_IDX;
-        printf("write back fileId %d\n", file);
-        printf("write data %d\n", *(int *)buf);
+        //printf("write back fileId %d\n", file);
+        //printf("write data %d\n", *(int *)buf);
         assert(lseek(file, offset, SEEK_SET) == offset);
         assert(write(file, (void *) buf, PAGE_SIZE) == PAGE_SIZE);
     }
@@ -82,12 +82,12 @@ public:
         int file = fileList[fileID];
         perm2temp.erase(filePermID[fileID]);
         assert(close(file) == 0);
-        printf("close file %d\n", file);
+        //printf("close file %d\n", file);
         idStack[idStackTop++] = fileID;
     }
 
     int openFile(const char *name) {
-        printf("open file %s\n",name);
+        //printf("open file %s\n",name);
         assert(idStackTop);
         int fileID = idStack[--idStackTop];
         isOpen[fileID] = 1;
@@ -95,7 +95,7 @@ public:
         perm2temp[filePermID[fileID]] = fileID;
         int file = open(name, O_RDWR);
         assert(file != -1);
-        printf("open file id %d\n",file);
+        //printf("open file id %d\n",file);
         fileList[fileID] = file;
         return fileID;
     }
