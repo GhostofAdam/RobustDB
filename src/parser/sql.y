@@ -188,10 +188,7 @@ drop_idx_stmt: DROP INDEX IDENTIFIER{
 alterStmt : ALTER TABLE IDENTIFIER ADD column_dec{ execute_add_column($3,$5); }
 		| ALTER TABLE IDENTIFIER DROP IDENTIFIER{ execute_drop_column($3,$5); }
 		| ALTER TABLE IDENTIFIER CHANGE IDENTIFIER column_dec{
-            $$=(column_ref*)malloc(sizeof(column_ref));
-            $$->table=$3;
-            $$->column=$5;
-            execute_drop_column($$,$5);
+            execute_change_column($3,$5,$6);
         }
 		| ALTER TABLE IDENTIFIER RENAME TO IDENTIFIER{
             execute_rename_table($3, $6);
@@ -262,7 +259,9 @@ column_constraint: NOT TOKEN_NULL {
                 $$->default_value = $4;
             }
             | {
-                $$ = NULL;
+                $$ = (column_constraint*)malloc(sizeof(column_constraint));
+                $$->flags = 0;
+                $$->default_value = NULL;
             }
             ;
 

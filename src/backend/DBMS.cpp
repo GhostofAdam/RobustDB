@@ -761,14 +761,33 @@ void DBMS::addConstraint(const char *table, const char *cons_name, table_constra
         printf("Table %s not found\n", table);
         return;
     }
-    if (!(tb_cons = current->getTableByName(cons->foreign_table_name))) {
-        printf("Foreign Table %s not found\n", cons->foreign_table_name);
-        return;
+    if(cons->type == CONSTRAINT_PRIMARY_KEY){
+        linked_list* column_list = cons->column_list;
+        for (; column_list; column_list = column_list->next) {
+            Table *tb;
+            auto *column = (column_ref*) column_list->data;
+            tb->addPrimary(column->column);
+        }
     }
-    // int col_id = tb->getColumnID(cons->column_name);
-    // int foreign_table_id = current->getTableId(cons->foreign_table_name);
-    // int foreign_col_id = tb_cons->getColumnID(cons->foreign_column_name);
-    // tb->addForeignKeyConstraint(col_id, foreign_table_id, foreign_col_id);
+    else if(cons->type == CONSTRAINT_FOREIGN_KEY){
+        if (!(tb_cons = current->getTableByName(cons->foreign_table_name))) {
+            printf("Foreign Table %s not found\n", cons->foreign_table_name);
+            return;
+        }
+        linked_list* column_list = cons->column_list;
+        linked_list* f_column_list = cons->foreign_column_list;
+        int foreign_table_id = current->getTableId(cons->foreign_table_name);
+        for (; column_list; column_list = column_list->next,f_column_list = f_column_list->next) {
+            auto *column = (column_ref*) column_list->data;
+            auto *f_column = (column_ref*) f_column_list->data;
+            int col_id = tb->getColumnID(column->column);
+            int foreign_col_id = tb_cons->getColumnID(f_column->column);
+            tb->addForeignKeyConstraint(col_id, foreign_table_id, foreign_col_id);
+        }
+    }
+    else{
+        printf("Wrong constraint type\n");
+    }
 }
 
 void DBMS::dropForeign(const char *table) {
@@ -840,4 +859,17 @@ bool DBMS::valueExistInTable(const char *value, const ForeignKey &key) {
     auto table = current->getTableById(key.foreign_table_id);
     auto result = table->selectIndexLowerBoundEqual(key.foreign_col, value);
     return result != (RID_t) -1;
+}
+void DBMS::dropForeignByName(const char *table, const char *fk_name){
+    Table *tb;
+    if (!current->isOpen()){
+        printf("Database is not open!\n");
+        return;
+    }
+    tb = current->getTableByName(table);
+    if (!tb) {
+        printf("Table name %s not found\n", table);
+        return;
+    }
+    tb->dropForeignByName(fk_name);
 }

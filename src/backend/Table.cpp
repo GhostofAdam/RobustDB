@@ -537,10 +537,12 @@ char *Table::getColumnName(int col) {
     return head.columnName[col];
 }
 
-int Table::addPrimary(const char *col) {
+int Table::addPrimary(const char *col, char* pk_name) {
     for (int i = 0; i < head.columnTot; i++) {
         if (strcmp(head.columnName[i], col) == 0) {
             setPrimary(i);
+            if(pk_name!=nullptr)
+                strcpy(head.pkName[i],pk_name);
             return i;
         }
     }
@@ -549,13 +551,30 @@ int Table::addPrimary(const char *col) {
 
 int Table::dropPrimary_byname(const char *col) {
     for (int i = 0; i < head.columnTot; i++) {
-        if (strcmp(head.columnName[i], col) == 0) {
+        if (strcmp(head.pkName[i], col) == 0) {
             head.isPrimary &= ~(1 << i);
             --head.primaryCount;
             return i;
         }
     }
     return -1;
+}
+int Table::dropForeignByName(const char *fk_name){
+    int flag = -1;
+    for (int i = 0; i < head.foreignKeyTot; i++) {
+        if (strcmp(head.foreignKeyList[i].name, fk_name) == 0) {
+            flag = i;
+            break;
+        }
+    }
+    for (int i = flag; i < head.foreignKeyTot -1; i++){
+        head.foreignKeyList[i].col = head.foreignKeyList[i+1].col;
+        head.foreignKeyList[i].foreign_table_id = head.foreignKeyList[i+1].foreign_table_id;
+        head.foreignKeyList[i].foreign_col = head.foreignKeyList[i+1].foreign_col;
+        strcpy(head.foreignKeyList[i].name, head.foreignKeyList[i+1].name);
+    }
+    head.foreignKeyTot--;
+    return flag;
 }
 
 void Table::dropPrimary() {
@@ -569,11 +588,13 @@ void Table::setPrimary(int col) {
     ++head.primaryCount;
 }
 
-void Table::addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId) {
+void Table::addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId, char* fk_name) {
     assert(head.foreignKeyTot < MAX_FOREIGN_KEY);
     head.foreignKeyList[head.foreignKeyTot].col = col;
     head.foreignKeyList[head.foreignKeyTot].foreign_table_id = foreignTableId;
     head.foreignKeyList[head.foreignKeyTot].foreign_col = foreignColId;
+    if(fk_name != nullptr)
+        strcpy(head.foreignKeyList[head.foreignKeyTot].name, fk_name);
     head.foreignKeyTot++;
 }
 

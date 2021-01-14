@@ -90,7 +90,7 @@ typedef struct table_def {
 } table_def;
 
 typedef struct table_constraint {
-    int type;
+    constraint_type type;
     struct linked_list *column_list;
     char *foreign_table_name;
     struct linked_list *foreign_column_list;

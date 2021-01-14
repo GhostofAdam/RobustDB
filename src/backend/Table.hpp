@@ -7,6 +7,7 @@
 struct Check {
     int col;
     int offset;
+    
     OpType op;
     RelType rel;
 };
@@ -15,6 +16,7 @@ struct ForeignKey {
     unsigned int col;
     unsigned int foreign_table_id;
     unsigned int foreign_col;
+    char name[MAX_NAME_LEN];
 };
 
 struct TableHead {
@@ -37,6 +39,7 @@ struct TableHead {
     Check checkList[MAX_CHECK];
     ForeignKey foreignKeyList[MAX_FOREIGN_KEY];
     char dataArr[MAX_DATA_SIZE];    // 存储default data值
+    char pkName[MAX_COLUMN_SIZE][MAX_NAME_LEN];
 };
 class Table{
     friend class Database;
@@ -57,11 +60,12 @@ public:
     int renameColumn(const char *old_col, const char *new_col);
     int getColumnID(const char *name);
     char *getColumnName(int col);
-    int addPrimary(const char *col);
+    int addPrimary(const char *col, char* pk_name = nullptr);
     int dropPrimary_byname(const char *col);
+    int dropForeignByName(const char *col);
     void dropPrimary();
     void setPrimary(int col);
-    void addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId);
+    void addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId, char* fk_name = nullptr);
     void dropForeign();
     int getColumnCount(){return head.columnTot;}
     int getFastCmp(RID_t rid, int col);

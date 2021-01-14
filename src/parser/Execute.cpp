@@ -186,40 +186,53 @@ void execute_sql_eof() {
 
 void execute_add_column(const char *tb_name, struct column_defs *col_def) {
     DBMS::getInstance()->addColumn(tb_name, col_def);
+    free((void *) tb_name);
+    //free_column_ref(col_def);
 }
 
 void execute_drop_column(const char *tb_name, struct column_ref *tb_col) {
     DBMS::getInstance()->dropColumn(tb_name, tb_col);
+    free((void *) tb_name);
+    free_column_ref(tb_col);
 }
-
-// void execute_rename_column(const char *tb_name, const char *old_col, const char *new_col) {
-//     DBMS::getInstance()->renameColumn(tb_name, old_col, new_col);
-// }
 
 void execute_add_primary_key(const char *tb_name, const char *col) {
     DBMS::getInstance()->addPrimary(tb_name, col);
+    free((void *) tb_name);
+    free((void *) col);
 }
 
 void execute_add_constraint(const char *tb_name, const char *cons_name, table_constraint *cons) {
     DBMS::getInstance()->addConstraint(tb_name, cons_name, cons);
+    free((void *) tb_name);
+    free((void *) cons_name);
 }
 
-void execute_drop_primary_key_byname(const char *tb_name, const char *col) {
-    DBMS::getInstance()->dropPrimary_byname(tb_name, col);
+void execute_drop_primary_key_byname(const char *tb_name, const char *pk_name) {
+    DBMS::getInstance()->dropPrimary_byname(tb_name, pk_name);
+    free((void *) tb_name);
+    free((void *) pk_name);
 }
 
 void execute_drop_primary_key(const char *tb_name) {
     DBMS::getInstance()->dropPrimary(tb_name);
+    free((void *) tb_name);
 }
 
 void execute_drop_foreign_key(const char *tb_name){
     DBMS::getInstance()->dropForeign(tb_name);
+    free((void *) tb_name);
 }
 void execute_rename_table(const char *old_table, const char *new_table){
     
-
 }
 
 void execute_drop_foreign_key_byname(const char *tb_name, const char *key_name){
-    
+    DBMS::getInstance()->dropForeignByName(tb_name, key_name);
+    free((void *) tb_name);
+    free((void *) key_name);
+}
+
+void execute_change_column(const char *tb_name, const char *col, struct column_defs *col_def){
+
 }

@@ -24,6 +24,7 @@ public:
     void addPrimary(const char *table, const char *col);
     void dropPrimary(const char *table);
     void dropPrimary_byname(const char *table, const char *col);
+    void dropForeignByName(const char *table, const char *fk_name);
     void addConstraint(const char *table, const char *cons_name, table_constraint *cons);
     void dropForeign(const char *table);
     void createIndex(column_ref *tb_col);
