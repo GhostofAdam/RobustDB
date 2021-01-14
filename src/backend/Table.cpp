@@ -1,4 +1,5 @@
-#include "Table.hpp"
+
+#include "DBMS.hpp"
 class DBMS;
 
 
@@ -122,8 +123,8 @@ void Table::open(const char* tableName) {
 }
 
 void Table::close() {
-    printf("closing tb\n");
-    printf("head data %d\n", *(int*)(&head));
+    //printf("closing tb\n");
+    //printf("head data %d\n", *(int*)(&head));
     storeIndex();
     int index = BufPageManager::getInstance().getPage(fileID, 0);
     memcpy(BufPageManager::getInstance().access(index), &head, sizeof(TableHead));
@@ -875,11 +876,11 @@ std::string Table::checkForeignKeyConstraint() {
     for (int i = 0; i < head.foreignKeyTot; ++i) {
         auto check = head.foreignKeyList[i];
         auto localData = (buf + head.columnOffset[check.col]);
-        // auto dbms = DBMS::getInstance();
-        // if (!dbms->valueExistInTable(localData, check)) {
-        //     return "Insert Error: Value of column " + std::string(head.columnName[i])
-        //            + " does not meet foreign key constraint";
-        // }
+        auto dbms = DBMS::getInstance();
+        if (!dbms->valueExistInTable(localData, check)) {
+            return "Insert Error: Value of column " + std::string(head.columnName[i])
+                   + " does not meet foreign key constraint";
+        }
     }
     return std::string();
 }

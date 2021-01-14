@@ -764,7 +764,6 @@ void DBMS::addConstraint(const char *table, const char *cons_name, table_constra
     if(cons->type == CONSTRAINT_PRIMARY_KEY){
         linked_list* column_list = cons->column_list;
         for (; column_list; column_list = column_list->next) {
-            Table *tb;
             auto *column = (column_ref*) column_list->data;
             tb->addPrimary(column->column);
         }

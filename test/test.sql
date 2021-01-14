@@ -1,48 +1,30 @@
-CREATE DATABASE orderDB;
+CREATE DATABASE test;
+USE test;
 
-USE orderDB;
-
-CREATE TABLE customer(
-	id INT NOT NULL,
-	name VARCHAR NOT NULL,
-	gender VARCHAR NOT NULL,
-	PRIMARY KEY (id)
+DROP TABLE nation;
+CREATE TABLE nation (
+	N_NATIONKEY		INT,
+	N_NAME			VARCHAR,
+	N_REGIONKEY		INT NOT NULL,
+	N_COMMENT		VARCHAR,
+	PRIMARY KEY (N_NATIONKEY)
 );
 
-CREATE TABLE book (
-  id INT NOT NULL,
-  title VARCHAR NOT NULL,
-  authors VARCHAR,
-  publisher VARCHAR,
-  copies INT,
-  PRIMARY KEY (id)
+DROP TABLE supplier;
+CREATE TABLE supplier (
+	S_SUPPKEY		INT,
+	S_NAME			VARCHAR,
+	S_addRESS		VARCHAR,
+	S_NATIONKEY		INT NOT NULL,
+	PRIMARY KEY (S_SUPPKEY)
 );
 
-CREATE TABLE website(
-	id INT NOT NULL,
-	name VARCHAR NOT NULL,
-	url VARCHAR,
-	PRIMARY KEY (id)
-);
 
-CREATE TABLE price(
-	website_id INT NOT NULL,
-	book_id INT NOT NULL,
-	price FLOAT NOT NULL,
-	PRIMARY KEY (website_id,book_id),
-	FOREIGN KEY (website_id) REFERENCES website(id),
-	FOREIGN KEY (book_id) REFERENCES book(id)
-);
+ALTER TABLE supplier ADD CONSTRAINT FK_NAME FOREIGN KEY  (S_NATIONKEY) REFERENCES nation(N_NATIONKEY);
+INSERT INTO nation VALUES (0,'a', 0,'a'),(1,'a', 0,'a'),(2,'a', 0,'a'),(3,'a', 0,'a');
+INSERT INTO supplier VALUES (0,'a','b',4);
+SELECT * FROM supplier;
 
-CREATE TABLE orders(
-	id INT NOT NULL,
-	website_id INT NOT NULL,
-	customer_id INT NOT NULL,
-	book_id INT NOT NULL,
-	order_date DATE,
-	quantity INT,
-	PRIMARY KEY (id),
-	FOREIGN KEY (website_id) REFERENCES website(id),
-	FOREIGN KEY (customer_id) REFERENCES customer(id),
-	FOREIGN KEY (book_id) REFERENCES book(id)
-);
+ALTER TABLE supplier  DROP FOREIGN KEY FK_NAME;
+INSERT INTO supplier VALUES (0,'a','b',4);
+SELECT * FROM supplier;
