@@ -203,29 +203,13 @@ void DBMS::createTable(const table_def *table) {
             break;
         }
     }
-    
+
     auto *cons_list = table->constraints;
     while (cons_list){
         table_constraint *cons = (table_constraint *) (cons_list->data);
-        switch (cons->type) {
-            case CONSTRAINT_PRIMARY_KEY: {
-                auto *column_name = cons->column_list;
-                while (column_name){
-                    auto name = ((column_ref *) column_name->data)->column;
-                    succeed = current->setPrimaryKey(tab, name);
-                    column_name = column_name->next;
-                }
-                break;
-            }
-            case CONSTRAINT_FOREIGN_KEY: {
-                // printf("Foreign key: COLUMN %s REFERENCES TABLE %s COLUMN %s\n",
-                //        cons->column_name, cons->foreign_table_name, cons->foreign_column_name);
-                // succeed = current->setForeignKey(tab, cons->column_list, cons->foreign_table_name, cons->foreign_column_list);
-                break;
-            }
-            default:
-                assert(0); // WTF?
-        }
+        succeed = addConstraint(table->name, nullptr, cons);
+        if(!succeed)
+            break;
         cons_list = cons_list->next;
     }
 
@@ -736,6 +720,7 @@ void DBMS::dropPrimary(const char *table) {
 }
 
 void DBMS::dropPrimary_byname(const char *table, const char *col) {
+    printf("drop %s primary key byname %s\n",table, col);
     Table *tb;
     if (!current->isOpen()) {
         printf("%s\n", "Please USE database first!");
@@ -751,27 +736,27 @@ void DBMS::dropPrimary_byname(const char *table, const char *col) {
     }
 }
 
-void DBMS::addConstraint(const char *table, const char *cons_name, table_constraint *cons) {
+bool DBMS::addConstraint(const char *table, const char *cons_name, table_constraint *cons) {
     Table *tb, *tb_cons;
     if (!current->isOpen()) {
         printf("%s\n", "Please USE database first!");
-        return;
+        return false;
     }
     if (!(tb = current->getTableByName(table))) {
         printf("Table %s not found\n", table);
-        return;
+        return false;
     }
     if(cons->type == CONSTRAINT_PRIMARY_KEY){
         linked_list* column_list = cons->column_list;
         for (; column_list; column_list = column_list->next) {
             auto *column = (column_ref*) column_list->data;
-            tb->addPrimary(column->column);
+            tb->addPrimary(column->column, cons_name);
         }
     }
     else if(cons->type == CONSTRAINT_FOREIGN_KEY){
         if (!(tb_cons = current->getTableByName(cons->foreign_table_name))) {
             printf("Foreign Table %s not found\n", cons->foreign_table_name);
-            return;
+            return false;
         }
         linked_list* column_list = cons->column_list;
         linked_list* f_column_list = cons->foreign_column_list;
@@ -781,12 +766,14 @@ void DBMS::addConstraint(const char *table, const char *cons_name, table_constra
             auto *f_column = (column_ref*) f_column_list->data;
             int col_id = tb->getColumnID(column->column);
             int foreign_col_id = tb_cons->getColumnID(f_column->column);
-            tb->addForeignKeyConstraint(col_id, foreign_table_id, foreign_col_id);
+            tb->addForeignKeyConstraint(col_id, foreign_table_id, foreign_col_id, cons_name);
         }
     }
     else{
         printf("Wrong constraint type\n");
+        return false;
     }
+    return true;
 }
 
 void DBMS::dropForeign(const char *table) {
@@ -860,6 +847,7 @@ bool DBMS::valueExistInTable(const char *value, const ForeignKey &key) {
     return result != (RID_t) -1;
 }
 void DBMS::dropForeignByName(const char *table, const char *fk_name){
+    printf("drop %s foreign key byname %s\n",table, fk_name);
     Table *tb;
     if (!current->isOpen()){
         printf("Database is not open!\n");

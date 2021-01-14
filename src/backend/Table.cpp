@@ -538,7 +538,7 @@ char *Table::getColumnName(int col) {
     return head.columnName[col];
 }
 
-int Table::addPrimary(const char *col, char* pk_name) {
+int Table::addPrimary(const char *col, const char* pk_name) {
     for (int i = 0; i < head.columnTot; i++) {
         if (strcmp(head.columnName[i], col) == 0) {
             setPrimary(i);
@@ -562,9 +562,8 @@ int Table::dropPrimary_byname(const char *col) {
 }
 int Table::dropForeignByName(const char *fk_name){
     int flag = -1;
-    for (int i = 0; i < head.foreignKeyTot; i++) {
+    for (int i = 0; i < head.foreignKeyTot; i++, flag = i) {
         if (strcmp(head.foreignKeyList[i].name, fk_name) == 0) {
-            flag = i;
             break;
         }
     }
@@ -574,7 +573,8 @@ int Table::dropForeignByName(const char *fk_name){
         head.foreignKeyList[i].foreign_col = head.foreignKeyList[i+1].foreign_col;
         strcpy(head.foreignKeyList[i].name, head.foreignKeyList[i+1].name);
     }
-    head.foreignKeyTot--;
+    if(flag < head.foreignKeyTot)
+        head.foreignKeyTot--;
     return flag;
 }
 
@@ -589,7 +589,7 @@ void Table::setPrimary(int col) {
     ++head.primaryCount;
 }
 
-void Table::addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId, char* fk_name) {
+void Table::addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId, const char* fk_name) {
     assert(head.foreignKeyTot < MAX_FOREIGN_KEY);
     head.foreignKeyList[head.foreignKeyTot].col = col;
     head.foreignKeyList[head.foreignKeyTot].foreign_table_id = foreignTableId;

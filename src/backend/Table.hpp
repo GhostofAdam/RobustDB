@@ -4,6 +4,8 @@
 #include "../bufmanager/BufPageManager.hpp"
 #include "../parser/type_def.hpp"
 
+extern bool noCheck;
+
 struct Check {
     int col;
     int offset;
@@ -60,12 +62,12 @@ public:
     int renameColumn(const char *old_col, const char *new_col);
     int getColumnID(const char *name);
     char *getColumnName(int col);
-    int addPrimary(const char *col, char* pk_name = nullptr);
+    int addPrimary(const char *col, const char* pk_name = nullptr);
     int dropPrimary_byname(const char *col);
     int dropForeignByName(const char *col);
     void dropPrimary();
     void setPrimary(int col);
-    void addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId, char* fk_name = nullptr);
+    void addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId, const char* fk_name = nullptr);
     void dropForeign();
     int getColumnCount(){return head.columnTot;}
     int getFastCmp(RID_t rid, int col);

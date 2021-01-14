@@ -25,6 +25,11 @@ INSERT INTO nation VALUES (0,'a', 0,'a'),(1,'a', 0,'a'),(2,'a', 0,'a'),(3,'a', 0
 INSERT INTO supplier VALUES (0,'a','b',4);
 SELECT * FROM supplier;
 
+
+ALTER TABLE supplier  DROP FOREIGN KEY FUCK_NAME;
+INSERT INTO supplier VALUES (0,'a','b',4);
+SELECT * FROM supplier;
+
 ALTER TABLE supplier  DROP FOREIGN KEY FK_NAME;
 INSERT INTO supplier VALUES (0,'a','b',4);
 SELECT * FROM supplier;
