@@ -917,12 +917,14 @@ std::string Table::checkRecord() {
     if ((notNull & head.notNull) != head.notNull) {
         return "Insert Error: not null column is null.";
     }
-    if (!checkPrimary()) {
-        return "ERROR: Primary Key Conflict";
-    }
-    auto foreignKeyCheck = checkForeignKeyConstraint();
-    if (!foreignKeyCheck.empty()) {
-        return foreignKeyCheck;
+    if(!noCheck){
+        if (!checkPrimary()) {
+            return "ERROR: Primary Key Conflict";
+        }
+        auto foreignKeyCheck = checkForeignKeyConstraint();
+        if (!foreignKeyCheck.empty()) {
+            return foreignKeyCheck;
+        }
     }
     return std::string();
 }
