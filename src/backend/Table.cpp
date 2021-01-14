@@ -126,7 +126,6 @@ void Table::close() {
     //printf("closing tb\n");
     //printf("head data %d\n", *(int*)(&head));
     assert(this->ready);
-    printf("size of head %lu\n", sizeof(this->head));
     storeIndex();
     int index = BufPageManager::getInstance().getPage(fileID, 0);
     memcpy(BufPageManager::getInstance().access(index), &head, sizeof(TableHead));
@@ -224,7 +223,6 @@ char *Table::getRecordTempPtr(RID_t rid) {
     assert(getFooter(page, offset / head.recordByte));
     return page + offset;
 }
-
 
 //return 0 when null
 //return value in tempbuf when rid = -1
@@ -435,6 +433,7 @@ bool Table::insert2Buffer(int col, const char *data){
     notNull |= (1u << col);
     return true;
 }
+
 bool Table::insert2Record(){
     assert(buf != nullptr);
     if (head.nextAvail == (RID_t) -1) {
@@ -444,6 +443,7 @@ bool Table::insert2Record(){
     setTempRecord(0, (char *) &head.nextAvail);
     auto error = checkRecord();
     if (!error.empty()) {
+        printf("%s", error.c_str());
         printf("Error occurred when inserting record, aborting...\n");
         return false;
     }
@@ -562,6 +562,7 @@ int Table::dropPrimary_byname(const char *col) {
     }
     return -1;
 }
+
 int Table::dropForeignByName(const char *fk_name){
     int flag = -1;
     for (int i = 0; i < head.foreignKeyTot; i++, flag = i) {
@@ -770,6 +771,7 @@ void Table::clearBuffer() {
         resetBuffer();
     }
 }
+
 void Table::resetBuffer(){
     unsigned int &notNull = *(unsigned int *) buf;
     notNull = 0;
@@ -872,7 +874,6 @@ std::string Table::checkValueConstraint() {
     }
     return std::string();
 }
-
 
 std::string Table::checkForeignKeyConstraint() {
     for (int i = 0; i < head.foreignKeyTot; ++i) {

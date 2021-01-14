@@ -232,6 +232,7 @@ void execute_drop_foreign_key(const char *tb_name){
     DBMS::getInstance()->dropForeign(tb_name);
     free((void *) tb_name);
 }
+
 void execute_rename_table(const char *old_table, const char *new_table){
     
 }

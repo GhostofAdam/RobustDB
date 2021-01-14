@@ -33,7 +33,10 @@ def main():
             line = line.strip().split("|")
             if filename.endswith(".tbl"):
                 line = line[:-1]
-            fr.write("INSERT INTO {} VALUES ".format(table_name) + "(" + ",".join(["\'{}\'".format(x) if y else x for x, y in zip(line, table_map)]) + ");\n")
+            if len(line) == len(table_map):
+                fr.write("INSERT INTO {} VALUES ".format(table_name) + "(" + ",".join(["\'{}\'".format(x) if y else x for x, y in zip(line, table_map)]) + ");\n")
+            else:
+                print(line)
         fr.write("\n\n")
     fr.close()
 
