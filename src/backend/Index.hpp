@@ -6,12 +6,12 @@ class IndexKey {
     int rid;    // record id
     int permID;
     int fastCmp;
-    int col;
+    int8_t col;
     bool isNull;
 
 public:
     IndexKey() = default;
-    IndexKey(int rid, int permID, int fastCmp, int col, int isNull) {
+    IndexKey(int permID, int rid, int col, int fastCmp, int isNull) {
         this->rid = rid;
         this->permID =permID;
         this->fastCmp = fastCmp;

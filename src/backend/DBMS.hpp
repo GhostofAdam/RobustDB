@@ -52,7 +52,6 @@ private:
     void iterateRecords(linked_list *tables, expr_node *condition, CallbackFunc callback);
     void iterateRecords(Table *tb, expr_node *condition, CallbackFunc callback);
     void freeLinkedList(linked_list *t);
-    std::vector<std::pair<Table*, RID_t>> selectRidfromTables(const linked_list* openedTables, condition_tree *condition);
     std::vector<RID_t> selectRidfromTable(Table* openedTables, condition_tree *condition);
     bool checkCondition(RID_t rid, condition_tree *condition);
     void updateColumnCache(const char *col_name, const char *table, const expr_node &v);

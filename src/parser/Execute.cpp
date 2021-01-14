@@ -109,7 +109,7 @@ void execute_create_tb(const table_def *table) {
                 free_column_list(tc->column_list);
                 break;
         }
-        free_column_list(tc->column_list);
+        //free_column_list(tc->column_list);
         free(tc);
         free(cons);
         cons = next;

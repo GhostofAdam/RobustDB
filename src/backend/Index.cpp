@@ -63,8 +63,12 @@ int Index::upperBound(const IndexKey &key) {
 
 int Index::lowerBoundEqual(const IndexKey &key) {
     iter = list.lower_bound(key);
-    if (iter == list.end()) return -1;
-    if (iter->getFastCmp() == key.getFastCmp()) return iter->getRid();
+    if (iter == list.end()){
+        return -1;  
+    }
+    if (iter->getFastCmp() == key.getFastCmp()){
+        return iter->getRid();
+    }
     return -1;
 }
 

@@ -89,7 +89,6 @@ void Table::create(const char* tableName) {
     RegisterManager::getInstance().checkIn(permID, this);
     this->ready = true;
     this->buf = nullptr;
-    this->colIndex.clear();
     head.pageTot = 1;       // 对应文件页数
     head.recordByte = 4;
     head.columnTot = 0;     // table列数
@@ -212,7 +211,7 @@ char *Table::getRecordTempPtr(RID_t rid) {
     int offset = rid % PAGE_SIZE;
     assert(1 <= pageID && pageID < head.pageTot);
     auto index = BufPageManager::getInstance().getPage(fileID, pageID);
-    char* page = BufPageManager::getInstance().access(index);
+    auto page = BufPageManager::getInstance().access(index);
     assert(getFooter(page, offset / head.recordByte));
     return page + offset;
 }
@@ -348,11 +347,12 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
     strcpy(head.columnName[id], name);
     head.columnType[id] = type;
     head.columnOffset[id] = head.recordByte;
-    head.columnLen[id] = 0;
+    
     head.defaultOffset[id] = -1;
     switch (type) {
         case CT_INT:
             head.recordByte += 4;
+            head.columnLen[id] = 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
                 memcpy(head.dataArr + head.dataArrUsed, &(data->literal_i), 4);
@@ -361,6 +361,7 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             break;
         case CT_FLOAT:
             head.recordByte += 4;
+            head.columnLen[id] = 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
                 memcpy(head.dataArr + head.dataArrUsed, &(data->literal_f), 4);
@@ -369,6 +370,7 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             break;
         case CT_DATE:
             head.recordByte += 4;
+            head.columnLen[id] = 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
                 memcpy(head.dataArr + head.dataArrUsed, &(data->literal_i), 4);
@@ -377,6 +379,7 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             break;
         case CT_VARCHAR:
             head.recordByte += MAX_NAME_LEN + 1;
+            head.columnLen[id] = MAX_NAME_LEN;
             head.recordByte += 4 - head.recordByte % 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
@@ -393,13 +396,33 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
 }
 
 bool Table::insert2Buffer(int col, const char *data){
-    if(buf == nullptr){
+    if (data == nullptr) {
+        setTempRecordNull(col);
+        return true;
+    }
+    if (buf == nullptr) {
         buf = new char[head.recordByte];
+        initTempRecord();
     }
     unsigned int &notNull = *(unsigned int *) buf;
-    if(data == nullptr){
-        if (notNull & (1u << col)) notNull ^= (1u << col);
+    switch (head.columnType[col]) {
+        case CT_INT:
+        case CT_DATE:
+        case CT_FLOAT:
+            memcpy(buf + head.columnOffset[col], data, 4);
+            break;
+        case CT_VARCHAR:
+            if ((unsigned int) head.columnLen[col] < strlen(data)) {
+                printf("column %d len %u data %s\n",col, (unsigned int) head.columnLen[col], data);
+                return false;
+            }
+            strcpy(buf + head.columnOffset[col], data);
+            break;
+        default:
+            assert(0);
     }
+    notNull |= (1u << col);
+    return true;
 }
 bool Table::insert2Record(){
     assert(buf != nullptr);
@@ -660,6 +683,7 @@ bool Table::checkPrimary() {
     }
     auto equalFirstIndex = IndexKey(permID, -1, firstPrimary, getFastCmp(-1, firstPrimary),
                                     getIsNull(-1, firstPrimary));
+    
     auto rid = colIndex[firstPrimary].lowerBoundEqual(equalFirstIndex);
     while (rid != -1) {
         if (rid == *(int *) (buf + head.columnOffset[0])) {

@@ -212,7 +212,6 @@ void DBMS::createTable(const table_def *table) {
                 auto *column_name = cons->column_list;
                 while (column_name){
                     auto name = ((column_ref *) column_name->data)->column;
-                    printf("Adding primary key constraint: Column: %s\n", name);
                     succeed = current->setPrimaryKey(tab, name);
                     column_name = column_name->next;
                 }
@@ -295,16 +294,16 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         freeLinkedList(openedTables);
         return;
     }
-    auto results =  selectRidfromTables(openedTables, condition);
-    for(auto row : results){
-        // TODO
+
+    for(linked_list*i = openedTables;i;i = i->next){
+        Table*  tb = (Table *)i->data;
+        std::cout<<tb->tableName<<std::endl;
+        auto results = selectRidfromTable(tb, condition);
+        printf("%ld\n", results.size());
     }
     freeLinkedList(openedTables);
 }
 
-std::vector<std::pair<Table*, RID_t>> DBMS::selectRidfromTables(const linked_list* openedTables, condition_tree *condition){
-
-}
 
 bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
     if(condition->node){
@@ -479,6 +478,8 @@ std::vector<RID_t> DBMS::selectRidfromTable(Table* tb, condition_tree *condition
             if(checkCondition(rid, condition)){
                 res.push_back(rid);
             }
+        }else{
+            res.push_back(rid);
         }
     }
     return res;

@@ -99,10 +99,11 @@ public:
     RID_t selectIndexUpperBound(int col, const char *data);
     RID_t selectIndexUpperBoundNull(int col);
     RID_t selectReveredIndexNext(int col);
+    string tableName;
 private:
     TableHead head;
-    string tableName;
-    vector<Index> colIndex;
+    
+    Index colIndex[MAX_COLUMN_SIZE];
     int fileID, permID;
     char *buf;
     bool ready;

@@ -283,7 +283,7 @@ tb_opt_dec: PRIMARY KEY '(' column_list ')' {
             ;
 
 expr_list_or_star: select_expr_list {$$=$1;}
-            | '*' {$$=0;}
+            | '*' {$$=NULL;}
             ;
 
 where_clause: WHERE condition_expr {$$=$2;}
@@ -329,9 +329,13 @@ column_list: column_ref {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data
 condition_expr: condition_term {
             $$=(condition_tree*)calloc(1,sizeof(condition_tree));
             $$->node = $1;
+            $$->right = NULL;
+            $$->left = NULL;
+            $$->op = OPER_NONE;
             }
             | condition_expr logic_op condition_expr {
                 $$=(condition_tree*)calloc(1,sizeof(condition_tree));
+                $$->node = NULL;
                 $$->left=$1;
                 $$->right=$3;
                 $$->op=$2;
