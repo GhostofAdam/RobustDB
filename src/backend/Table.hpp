@@ -28,7 +28,7 @@ struct TableHead {
     int8_t foreignKeyTot;
     int pageTot;
     int recordByte;
-    int dataArrUsed;    // addColumn中使用,记录dataArr的offset
+    int dataArrUsed;
     unsigned int nextAvail;
     unsigned int notNull;
     unsigned int hasIndex;
@@ -40,7 +40,7 @@ struct TableHead {
     int defaultOffset[MAX_COLUMN_SIZE];
     Check checkList[MAX_CHECK];
     ForeignKey foreignKeyList[MAX_FOREIGN_KEY];
-    char dataArr[MAX_DATA_SIZE];    // 存储default data值
+    char dataArr[MAX_DATA_SIZE];
     char pkName[MAX_COLUMN_SIZE][MAX_NAME_LEN];
 };
 class Table{

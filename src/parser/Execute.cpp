@@ -65,13 +65,13 @@ void report_sql_error(const char *error_name, const char *msg) {
 }
 
 void execute_desc_tables(const char *table_name) {
-    printf("desc table %s\n", table_name);
+    printf("--desc table %s\n", table_name);
     DBMS::getInstance()->descTable(table_name);
     free((void *) table_name);
 }
 
 void execute_show_tables() {
-    printf("show tables\n");
+    printf("--show tables\n");
     DBMS::getInstance()->showTables();
 }
 
@@ -84,7 +84,7 @@ void execute_create_db(const char *db_name) {
 }
 
 void execute_create_tb(const table_def *table) {
-    printf("create tb %s\n", table->name);
+    printf("--create table %s\n", table->name);
     DBMS::getInstance()->createTable(table);
     free((void *) table->name);
     column_defs *c = table->columns;
@@ -117,25 +117,25 @@ void execute_create_tb(const table_def *table) {
 }
 
 void execute_drop_db(const char *db_name) {
-    printf("drop db %s\n", db_name);
+    printf("--drop db %s\n", db_name);
     DBMS::getInstance()->dropDB(db_name);
     free((void *) db_name);
 }
 
 void execute_drop_table(const char *table_name) {
-    printf("drop tb %s\n", table_name);
+    printf("--drop table %s\n", table_name);
     DBMS::getInstance()->dropTable(table_name);
     free((void *) table_name);
 }
 
 void execute_use_db(const char *db_name) {
-    printf("use db %s\n", db_name);
+    printf("--use db %s\n", db_name);
     DBMS::getInstance()->switchToDB(db_name);
     free((void *) db_name);
 }
 
 void execute_insert_row(struct insert_argu *stmt) {
-    printf("insert row\n");
+    printf("--insert row\n");
     assert(stmt->table);
     DBMS::getInstance()->insertRow(stmt->table, stmt->columns, stmt->values);
     free_column_list(stmt->columns);
@@ -144,7 +144,7 @@ void execute_insert_row(struct insert_argu *stmt) {
 }
 
 void execute_select(struct select_argu *stmt) {
-    printf("select row\n");
+    printf("--select row\n");
     DBMS::getInstance()->selectRow(stmt->tables, stmt->column_expr, stmt->where);
     free_tables(stmt->tables);
     free_expr_list(stmt->column_expr);
@@ -153,7 +153,7 @@ void execute_select(struct select_argu *stmt) {
 }
 
 void execute_delete(struct delete_argu *stmt) {
-    printf("delete row\n");
+    printf("--delete row\n");
     DBMS::getInstance()->deleteRow(stmt->table, stmt->where);
     free(stmt->table);
     if (stmt->where)
@@ -161,7 +161,7 @@ void execute_delete(struct delete_argu *stmt) {
 }
 
 void execute_update(struct update_argu *stmt) {
-    printf("update row\n");
+    printf("--update row\n");
     DBMS::getInstance()->updateRow(stmt->table, stmt->where, stmt->column, stmt->val_expr);
     free(stmt->table);
     if (stmt->where)
@@ -171,11 +171,13 @@ void execute_update(struct update_argu *stmt) {
 }
 
 void execute_drop_idx(struct column_ref *tb_col) {
+    printf("--drop idx\n");
     DBMS::getInstance()->dropIndex(tb_col);
     free_column_ref(tb_col);
 }
 
 void execute_create_idx(struct column_ref *tb_col) {
+    printf("--create idx\n");
     DBMS::getInstance()->createIndex(tb_col);
     free_column_ref(tb_col);
 }
@@ -185,41 +187,48 @@ void execute_sql_eof() {
 }
 
 void execute_add_column(const char *tb_name, struct column_defs *col_def) {
+    printf("--add column\n");
     DBMS::getInstance()->addColumn(tb_name, col_def);
     free((void *) tb_name);
     //free_column_ref(col_def);
 }
 
 void execute_drop_column(const char *tb_name, struct column_ref *tb_col) {
+    printf("--drop column\n");
     DBMS::getInstance()->dropColumn(tb_name, tb_col);
     free((void *) tb_name);
     free_column_ref(tb_col);
 }
 
 void execute_add_primary_key(const char *tb_name, const char *col) {
+    printf("--add primary key\n");
     DBMS::getInstance()->addPrimary(tb_name, col);
     free((void *) tb_name);
     free((void *) col);
 }
 
 void execute_add_constraint(const char *tb_name, const char *cons_name, table_constraint *cons) {
+    printf("--add constraint\n");
     DBMS::getInstance()->addConstraint(tb_name, cons_name, cons);
     free((void *) tb_name);
     free((void *) cons_name);
 }
 
 void execute_drop_primary_key_byname(const char *tb_name, const char *pk_name) {
+    printf("--drop primary key bn\n");
     DBMS::getInstance()->dropPrimary_byname(tb_name, pk_name);
     free((void *) tb_name);
     free((void *) pk_name);
 }
 
 void execute_drop_primary_key(const char *tb_name) {
+    printf("--drop primary key\n");
     DBMS::getInstance()->dropPrimary(tb_name);
     free((void *) tb_name);
 }
 
 void execute_drop_foreign_key(const char *tb_name){
+    printf("--drop foreign key\n");
     DBMS::getInstance()->dropForeign(tb_name);
     free((void *) tb_name);
 }
@@ -228,6 +237,7 @@ void execute_rename_table(const char *old_table, const char *new_table){
 }
 
 void execute_drop_foreign_key_byname(const char *tb_name, const char *key_name){
+    printf("--drop foreign key bn\n");
     DBMS::getInstance()->dropForeignByName(tb_name, key_name);
     free((void *) tb_name);
     free((void *) key_name);

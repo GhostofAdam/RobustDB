@@ -107,7 +107,7 @@ void Table::create(const char* tableName) {
 }
 
 void Table::open(const char* tableName) {
-    printf("sizeof TableHead %d\n",sizeof(TableHead));
+    printf("sizeof TableHead %lu\n", sizeof(TableHead));
     assert(!this->ready);
     this->tableName = tableName;
     this->fileID = BufPageManager::getFileManager().openFile(tableName);
@@ -125,6 +125,8 @@ void Table::open(const char* tableName) {
 void Table::close() {
     //printf("closing tb\n");
     //printf("head data %d\n", *(int*)(&head));
+    assert(this->ready);
+    printf("size of head %lu\n", sizeof(this->head));
     storeIndex();
     int index = BufPageManager::getInstance().getPage(fileID, 0);
     memcpy(BufPageManager::getInstance().access(index), &head, sizeof(TableHead));
@@ -388,8 +390,8 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             break;
         case CT_VARCHAR:
             head.recordByte += MAX_NAME_LEN + 1;
-            head.columnLen[id] = MAX_NAME_LEN;
             head.recordByte += 4 - head.recordByte % 4;
+            head.columnLen[id] = MAX_NAME_LEN;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
                 strcpy(head.dataArr + head.dataArrUsed, data->literal_s);

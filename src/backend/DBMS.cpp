@@ -140,7 +140,7 @@ DBMS *DBMS::getInstance() {
 }
 
 void DBMS::exit() {
-    printf("exit\n");
+    printf("--exit\n");
     if (current->isOpen())
         current->close();
 }
@@ -159,7 +159,7 @@ void DBMS::createTable(const table_def *table) {
     }
         
     assert(table->name != NULL);
-    const char * name = (const char *) table->name;
+    const char *name = (const char *) table->name;
     if (current->getTableByName(name)) {
         printf("Table `%s` already exists\n", table->name);
         return;
@@ -193,10 +193,11 @@ void DBMS::createTable(const table_def *table) {
                 break;
         }
         column = (*i);
-        int id = tab->addColumn(column->name, type,
-                                 (bool) column->flags->flags & COLUMN_FLAG_NOTNULL,
-                                 (bool) column->flags->flags & COLUMN_FLAG_DEFAULT,
-                                 column->flags->default_value);
+        int id = tab->addColumn(column->name, 
+                                type,
+                                (bool) column->flags->flags & COLUMN_FLAG_NOTNULL,
+                                (bool) column->flags->flags & COLUMN_FLAG_DEFAULT,
+                                column->flags->default_value);
         succeed = id != -1;
         if(!succeed){
             printf("Column %s exits\n", column->name);
@@ -566,7 +567,6 @@ void DBMS::deleteRow(const char *table, condition_tree *condition) {
 }
 
 void DBMS::insertRow(const char *table, const linked_list *columns, const linked_list *values) {
-    
     if (!current->isOpen()){
         printf("Database is not open!");
         return;
@@ -610,7 +610,6 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
         bool succeed = false;
         for (const linked_list *j = expr_list; j; j = j->next) {
             auto val = (expr_node *) j->data;
-           
             auto colType = tb->getColumnType(*it);
             if (!checkColumnType(colType, val)) {
                 printf("Wrong data type\n");

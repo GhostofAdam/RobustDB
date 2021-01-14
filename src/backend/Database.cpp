@@ -22,10 +22,10 @@ void Database::open(const string &name) {
     assert(!this->ready);
     this->dbName = name;
     ifstream fin((name + ".db").c_str());
-    int tb_num;
-    fin >> tb_num;
-    for (size_t i = 0; i < tb_num; i++) {
-        std::string _name;
+    int tableSize;
+    fin >> tableSize;
+    for (size_t i = 0; i < tableSize; i++) {
+        string _name;
         fin >> _name;
         this->tableName.push_back(_name);
         this->table.push_back(new Table());
@@ -35,11 +35,13 @@ void Database::open(const string &name) {
 }
 
 void Database::close() {
+    printf("closing db %s\n", this->dbName.c_str());
     assert(this->ready);
     FILE *file = fopen((this->dbName + ".db").c_str(), "w");
-    fprintf(file, "%zu\n", this->table.size());
+    int tableSize = this->table.size();
+    fprintf(file, "%zu\n", tableSize);
     
-    for (size_t i = 0; i < this->table.size(); i++) {
+    for (size_t i = 0; i < tableSize; i++) {
         this->table[i]->close();
         delete this->table[i];
         fprintf(file, "%s\n", this->tableName[i].c_str());
