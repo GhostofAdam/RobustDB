@@ -106,7 +106,9 @@ public:
     }
 
     void writeBack(int index) {
+        printf("index %d\n",index);
         if (dirty[index]) {
+            printf("dirty index %d\n",index);
             int f, p;
             hash->getKeys(index, f, p);
             fileManager->writePage(f, p, getBuf(index));

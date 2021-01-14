@@ -639,13 +639,14 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
             }
             ++it;
         }
+        succeed = tb->insert2Record();
         if(!succeed){
             break;
         }
         else{
             ++count;
         }
-        succeed = tb->insert2Record();
+        
     }
     printf("%d rows inserted.\n", count);
 }

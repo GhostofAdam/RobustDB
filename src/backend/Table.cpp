@@ -84,8 +84,8 @@ void Table::create(const char* tableName) {
     this->tableName = tableName;
     BufPageManager::getFileManager().createFile(tableName); // 创建table对应文件
     this->fileID = BufPageManager::getFileManager().openFile(tableName);  
-    this->permID = BufPageManager::getFileManager().getFilePermID(fileID);
-    BufPageManager::getInstance().allocPage(fileID, 0); // 为文件首页获取一个缓存中的页面
+    this->permID = BufPageManager::getFileManager().getFilePermID(this->fileID);
+    BufPageManager::getInstance().allocPage(this->fileID, 0); // 为文件首页获取一个缓存中的页面
     RegisterManager::getInstance().checkIn(permID, this);
     this->ready = true;
     this->buf = nullptr;
@@ -106,6 +106,7 @@ void Table::create(const char* tableName) {
 }
 
 void Table::open(const char* tableName) {
+    printf("sizeof TableHead %d\n",sizeof(TableHead));
     assert(!this->ready);
     this->tableName = tableName;
     this->fileID = BufPageManager::getFileManager().openFile(tableName);
@@ -121,7 +122,8 @@ void Table::open(const char* tableName) {
 }
 
 void Table::close() {
-    assert(this->ready);
+    printf("closing tb\n");
+    printf("head data %d\n", *(int*)(&head));
     storeIndex();
     int index = BufPageManager::getInstance().getPage(fileID, 0);
     memcpy(BufPageManager::getInstance().access(index), &head, sizeof(TableHead));
@@ -130,6 +132,10 @@ void Table::close() {
     BufPageManager::getInstance().closeFile(fileID);
     BufPageManager::getFileManager().closeFile(fileID);
     this->ready = false;
+    if (buf) {
+        delete[] buf;
+        buf = 0;
+    }
 }
 
 void Table::drop() {
@@ -347,6 +353,8 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
     strcpy(head.columnName[id], name);
     head.columnType[id] = type;
     head.columnOffset[id] = head.recordByte;
+
+    if (notNull) head.notNull |= (1 << id);
     
     head.defaultOffset[id] = -1;
     switch (type) {
@@ -856,6 +864,7 @@ std::string Table::checkForeignKeyConstraint() {
 }
 
 void Table::printTableDef() {
+    printf("columnTot %d \n", head.columnTot);
     for (int i = 1; i < head.columnTot; i++) {
         printf("%s", head.columnName[i]);
         switch (head.columnType[i]) {

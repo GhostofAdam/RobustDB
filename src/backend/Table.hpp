@@ -25,18 +25,18 @@ struct TableHead {
     int pageTot;
     int recordByte;
     int dataArrUsed;    // addColumn中使用,记录dataArr的offset
-    RID_t nextAvail;
-    RID_t notNull;
-    RID_t hasIndex;
-    RID_t isPrimary;
-    char dataArr[MAX_DATA_SIZE];    // 存储default data值
+    unsigned int nextAvail;
+    unsigned int notNull;
+    unsigned int hasIndex;
+    unsigned int isPrimary;
     char columnName[MAX_COLUMN_SIZE][MAX_NAME_LEN];
-    int columnLen[MAX_COLUMN_SIZE];
     int columnOffset[MAX_COLUMN_SIZE];
-    int defaultOffset[MAX_COLUMN_SIZE];
     ColumnType columnType[MAX_COLUMN_SIZE];
+    int columnLen[MAX_COLUMN_SIZE];
+    int defaultOffset[MAX_COLUMN_SIZE];
     Check checkList[MAX_CHECK];
     ForeignKey foreignKeyList[MAX_FOREIGN_KEY];
+    char dataArr[MAX_DATA_SIZE];    // 存储default data值
 };
 class Table{
     friend class Database;

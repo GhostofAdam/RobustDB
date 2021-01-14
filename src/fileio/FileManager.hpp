@@ -49,10 +49,13 @@ class FileManager {
 
 public:
     void writePage(int fileID, int pageID, char *buf) {
+        
         assert(0 <= fileID && fileID < MAX_FILE_NUM && isOpen[fileID]);
         int file = fileList[fileID];
         off_t offset = pageID;
         offset <<= PAGE_IDX;
+        printf("write back fileId %d\n", file);
+        printf("write data %d\n", *(int *)buf);
         assert(lseek(file, offset, SEEK_SET) == offset);
         assert(write(file, (void *) buf, PAGE_SIZE) == PAGE_SIZE);
     }
@@ -78,19 +81,13 @@ public:
         isOpen[fileID] = 0;
         int file = fileList[fileID];
         perm2temp.erase(filePermID[fileID]);
-        ::close(file);
+        assert(close(file) == 0);
+        printf("close file %d\n", file);
         idStack[idStackTop++] = fileID;
     }
 
-    // void close() {
-    //   for (int i = 0; i < MAX_FILE_NUM; i++) {
-    //     if (isOpen[i]) closeFile(i);
-    //     isOpen[i] = 0;
-    //     idStack[idStackTop++] = i;
-    //   }
-    // }
-
     int openFile(const char *name) {
+        printf("open file %s\n",name);
         assert(idStackTop);
         int fileID = idStack[--idStackTop];
         isOpen[fileID] = 1;
@@ -98,6 +95,7 @@ public:
         perm2temp[filePermID[fileID]] = fileID;
         int file = open(name, O_RDWR);
         assert(file != -1);
+        printf("open file id %d\n",file);
         fileList[fileID] = file;
         return fileID;
     }

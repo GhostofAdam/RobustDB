@@ -34,5 +34,4 @@ private:
     string dbName;
     vector<string> tableName;
     vector<Table*> table;
-    size_t tableSize;
 };

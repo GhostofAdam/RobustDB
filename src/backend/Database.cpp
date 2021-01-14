@@ -22,10 +22,13 @@ void Database::open(const string &name) {
     assert(!this->ready);
     this->dbName = name;
     ifstream fin((name + ".db").c_str());
-    for (size_t i = 0; i < this->table.size(); i++) {
-        fin >> this->tableName[i];
-        assert(this->table[i] == nullptr);
-        this->table[i] = new Table();
+    int tb_num;
+    fin >> tb_num;
+    for (size_t i = 0; i < tb_num; i++) {
+        std::string _name;
+        fin >> _name;
+        this->tableName.push_back(_name);
+        this->table.push_back(new Table());
         this->table[i]->open((name + "." + this->tableName[i] + ".table").c_str());
     }
     this->ready = true;
@@ -34,13 +37,12 @@ void Database::open(const string &name) {
 void Database::close() {
     assert(this->ready);
     FILE *file = fopen((this->dbName + ".db").c_str(), "w");
-    //fprintf(file, "%zu\n", this->table.size());
+    fprintf(file, "%zu\n", this->table.size());
     
     for (size_t i = 0; i < this->table.size(); i++) {
         this->table[i]->close();
         delete this->table[i];
-        this->table[i] = nullptr;
-        //fprintf(file, "%s\n", this->tableName[i].c_str());
+        fprintf(file, "%s\n", this->tableName[i].c_str());
     }
     
     this->table.clear();
@@ -73,7 +75,6 @@ void Database::create(const string &name) {
 
 Table *Database::createTable(const std::string &name) {
     assert(ready);
-    tableSize++;
     tableName.push_back(name);
     table.push_back(new Table());
     table.back()->create((dbName + "." + name + ".table").c_str());
@@ -101,19 +102,19 @@ void Database::dropTableByName(const std::string &name) {
 }
 
 int Database::getTableId(const string &name) {
-    for (size_t i = 0; i < tableSize; i++)
+    for (size_t i = 0; i < table.size(); i++)
         if (!tableName[i].compare(name)) {
             return i;
         }
 }
 
 Table *Database::getTableById(const size_t id) {
-    if (id < tableSize) return table[id];
+    if (id < table.size()) return table[id];
     else return nullptr;
 }
 
 Table *Database::getTableByName(const string & name) {
-    for (size_t i = 0; i < tableSize; i++){
+    for (size_t i = 0; i < table.size(); i++){
         if (!tableName[i].compare(name)) {
             return table[i];
         }
