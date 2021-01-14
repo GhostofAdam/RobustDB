@@ -1,5 +1,5 @@
 logs/*
 .*.swp
 build
-.*.db
-.*.sh
+*.db
+*.sh
