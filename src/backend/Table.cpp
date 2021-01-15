@@ -107,7 +107,6 @@ void Table::create(const char* tableName) {
 }
 
 void Table::open(const char* tableName) {
-    printf("sizeof TableHead %lu\n", sizeof(TableHead));
     assert(!this->ready);
     this->tableName = tableName;
     this->fileID = BufPageManager::getFileManager().openFile(tableName);
