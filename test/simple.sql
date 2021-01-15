@@ -8,6 +8,9 @@ CREATE TABLE customer(
 );
 SHOW TABLES;
 DESC customer;
+ALTER TABLE customer ADD FUCK INT;
+DESC customer;
+ALTER TABLE customer DROP FUCK;
 INSERT INTO customer VALUES (0,'a','b'),(1,'a','b'),(2,'a','b'),(3,'a','b');
 SELECT * FROM customer WHERE name = 'a';
 EXIT;

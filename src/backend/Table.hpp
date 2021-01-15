@@ -24,7 +24,6 @@ struct ForeignKey {
 struct TableHead {
     int8_t columnTot;
     int8_t primaryCount;
-    int8_t checkTot;
     int8_t foreignKeyTot;
     int pageTot;
     int recordByte;
@@ -38,7 +37,6 @@ struct TableHead {
     ColumnType columnType[MAX_COLUMN_SIZE];
     int columnLen[MAX_COLUMN_SIZE];
     int defaultOffset[MAX_COLUMN_SIZE];
-    Check checkList[MAX_CHECK];
     ForeignKey foreignKeyList[MAX_FOREIGN_KEY];
     char dataArr[MAX_DATA_SIZE];
     char pkName[MAX_COLUMN_SIZE][MAX_NAME_LEN];
@@ -109,9 +107,7 @@ public:
     std::string modifyRecord(RID_t rid, int col, char *data);
     bool isPrimary(int col);
     bool checkPrimary();
-    std::string checkValueConstraint();
     std::string checkForeignKeyConstraint();
-    std::string genCheckError(int checkId);
     RID_t selectIndexLowerBoundEqual(int col, const char *data);
     RID_t selectIndexLowerBound(int col, const char *data);
     RID_t selectIndexLowerBoundNull(int col);

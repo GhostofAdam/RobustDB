@@ -96,7 +96,6 @@ void Table::create(const char* tableName) {
     head.dataArrUsed = 0;
     head.nextAvail = (unsigned int) -1;
     head.notNull = 0;       // 规定非空列数量
-    head.checkTot = 0;
     head.foreignKeyTot = 0; // 外键数量
     head.primaryCount = 0;  // 主键数量
     addColumn("RID", (ColumnType)CT_INT, true, false, nullptr);
@@ -458,7 +457,7 @@ bool Table::insert2Record(){
 }
     
 int Table::dropColumn(const char *name) {
-    printf("dropping column %s", name);
+    printf("dropping column %s\n", name);
     int id = -1;
     for (int i = 0; i < head.columnTot; i++) {
         if (strcmp(head.columnName[i], name) == 0)
@@ -466,51 +465,72 @@ int Table::dropColumn(const char *name) {
     }
     if (id == -1)
         return -1;
-    ColumnType type = head.columnType[id];
-    switch (type) {
-        case CT_INT:
-        case CT_FLOAT:
-        case CT_DATE:{
-            head.recordByte -= 4;
-            int offset = head.defaultOffset[id];
-            if (offset != -1) {
-                for (int i = 0; i < head.columnTot; i++) {
-                    if (head.defaultOffset[i] > offset)
-                        head.defaultOffset[i] -= 4;
-                }
-                memcpy(head.dataArr + offset, head.dataArr + offset + 4, head.dataArrUsed - offset - 4);
-                head.dataArrUsed -= 4;
-            }
-            break;
+
+    unsigned int notNull_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.notNull >> i) & 0x1)
+                notNull_new |= (1 << i);
         }
-        case CT_VARCHAR:{
-            int data_len = MAX_DATA_LEN + 1 + 4 - (MAX_DATA_LEN + 1) % 4;
-            head.recordByte -= data_len;
-            int offset = head.defaultOffset[id];
-            if (head.defaultOffset[id] != -1) {
-                int next_offset = -1;
-                for (int i = 0; i < head.columnTot; i++) {
-                    if (head.defaultOffset[i] > offset)
-                        if (next_offset == -1 || head.defaultOffset[i] < next_offset)
-                            next_offset = head.defaultOffset[i];
-                }
-                for (int i = 0; i < head.columnTot; i++) {
-                    if (head.defaultOffset[i] > offset)
-                        head.defaultOffset[i] -= (next_offset - offset);
-                }
-                memcpy(head.dataArr + offset, head.dataArr + offset + (next_offset - offset), head.dataArrUsed - offset - (next_offset - offset));
-                head.dataArrUsed -= (next_offset - offset);
-            }
-            break;
+        else {
+            if ((head.notNull >> (i + 1)) & 0x1)
+                notNull_new |= (1 << i);
         }
-        default:
-            assert(0);
     }
+    head.notNull = notNull_new;
+
+    unsigned int hasIndex_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.hasIndex >> i) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+        else {
+            if ((head.hasIndex >> (i + 1)) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+    }
+    head.hasIndex = hasIndex_new;
+
+    if ((head.isPrimary >> id) & 0x1) {
+        head.primaryCount--;
+    }
+    unsigned int isPrimary_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.isPrimary >> i) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+        else {
+            if ((head.isPrimary >> (i + 1)) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+    }
+    head.isPrimary = isPrimary_new;
+
+    int8_t fkt = head.foreignKeyTot;
+    bool fk_flag[fkt];
+    for (int8_t i = 0; i < fkt; i++) {
+        if (head.foreignKeyList[i].col == id)
+            fk_flag[i] = false;
+        else
+            fk_flag[i] = true;
+    }
+    head.foreignKeyTot = 0;
+    for (int8_t i = 0; i < fkt; i++) {
+        if (fk_flag[i]) {
+            head.foreignKeyList[head.foreignKeyTot] = head.foreignKeyList[i];
+            head.foreignKeyTot++;
+        }
+    }
+
     for (int i = id; i < head.columnTot - 1; i++) {
-        head.columnType[i] = head.columnType[i + 1];
+        strcpy(head.columnName[i], head.columnName[i + 1]);
         head.columnOffset[i] = head.columnOffset[i + 1];
+        head.columnType[i] = head.columnType[i + 1];
         head.columnLen[i] = head.columnLen[i + 1];
         head.defaultOffset[i] = head.defaultOffset[i + 1];
+        strcpy(head.pkName[i], head.pkName[i + 1]);
     }
     head.columnTot--;
     return id;
@@ -786,91 +806,6 @@ void Table::resetBuffer(){
             }
         }
     }
-}
-
-std::string Table::genCheckError(int checkId) {
-    unsigned int &notNull = *(unsigned int *) buf;
-    int ed = checkId + 1, st = checkId;
-    while (head.checkList[st - 1].col == head.checkList[checkId].col &&
-           head.checkList[st - 1].rel == RE_OR && head.checkList[checkId].rel == RE_OR) {
-        checkId++;
-    }
-    std::ostringstream stm;
-    stm << "Insert Error: Col " << head.columnName[head.checkList[checkId].col];
-    stm << " CHECK ";
-
-    for (int i = st; i < ed; i++) {
-        if (i != st) stm << " OR ";
-        Check chk = head.checkList[i];
-        switch (head.columnType[chk.col]) {
-            case CT_INT:
-            case CT_DATE:
-                if (notNull & (1 << chk.col)) {
-                    stm << *(int *) (buf + head.columnOffset[chk.col]);
-                } else {
-                    stm << "null";
-                } // TODO parse date to string here
-                stm << Compare::opTypeToString(chk.op) << *(int *) (head.dataArr + chk.offset);
-                break;
-            case CT_FLOAT:
-                if (notNull & (1 << chk.col)) {
-                    stm << *(float *) (buf + head.columnOffset[chk.col]);
-                } else {
-                    stm << "null";
-                }
-                stm << Compare::opTypeToString(chk.op) << *(float *) (head.dataArr + chk.offset);
-                break;
-            case CT_VARCHAR:
-                if (notNull & (1 << chk.col)) {
-                    stm << *(int *) (buf + head.columnOffset[chk.col]);
-                } else {
-                    stm << "null";
-                }
-                stm << "'" << buf + head.columnOffset[chk.col] << "''" << Compare::opTypeToString(chk.op) << "'"
-                    << head.dataArr + chk.offset << "'";
-                break;
-            default:
-                assert(false);
-        }
-    }
-    return stm.str();
-}
-
-std::string Table::checkValueConstraint() {
-    unsigned int &notNull = *(unsigned int *) buf;
-    bool flag = true, checkResult = false;
-    for (int i = 0; i < head.checkTot; i++) {
-        auto chk = head.checkList[i];
-        if (chk.offset == -1) {
-            checkResult |= (chk.op == OP_EQ) && (((~notNull) & (1 << chk.col)) == 0);
-        } else {
-            switch (head.columnType[chk.col]) {
-                case CT_INT:
-                case CT_DATE:
-                    checkResult |= Compare::compareInt(*(int *) (buf + head.columnOffset[chk.col]), chk.op,
-                                              *(int *) (head.dataArr + chk.offset));
-                    break;
-                case CT_FLOAT:
-                    checkResult |= Compare::compareFloat(*(float *) (buf + head.columnOffset[chk.col]), chk.op,
-                                                *(float *) (head.dataArr + chk.offset));
-                    break;
-                case CT_VARCHAR:
-                    checkResult |= Compare::compareVarchar(buf + head.columnOffset[chk.col], chk.op,
-                                                  head.dataArr + chk.offset);
-                    break;
-                default:
-                    assert(false);
-            }
-            notNull |= (1u << i);
-        }
-        if (i == head.checkTot - 1 || chk.rel == RE_AND ||
-            !(head.checkList[i + 1].rel == RE_OR && chk.col == head.checkList[i + 1].col)) {
-            flag &= checkResult;
-            checkResult = false;
-        }
-        if (!flag) return genCheckError(i);
-    }
-    return std::string();
 }
 
 std::string Table::checkForeignKeyConstraint() {
