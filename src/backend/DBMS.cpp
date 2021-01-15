@@ -282,7 +282,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         Table*  tb = (Table *)i->data;
         std::cout<<tb->tableName<<std::endl;
         auto results = selectRidfromTable(tb, condition);
-        printf("--Selected %ld rows from Table %s", results.size(), tb->tableName.c_str());
+        printf("--Selected %ld rows from Table %s\n", results.size(), tb->tableName.c_str());
     }
     freeLinkedList(openedTables);
 }

@@ -600,33 +600,21 @@ int Table::dropPrimary_byname(const char *pk_name) {
 }
 
 int Table::dropForeignByName(const char *fk_name){
-    int flag = -1;
-    while (true)
-    {
-        for (int i = 0; i < head.foreignKeyTot; i++, flag = i) {
-            if (strcmp(head.foreignKeyList[i].name, fk_name) == 0) {
-                printf("--Drop Primary Key Column %d\n", head.foreignKeyList[i].col);
-                break;
-            }
-        }
-        for (int i = flag; i < head.foreignKeyTot -1; i++){
-            head.foreignKeyList[i].col = head.foreignKeyList[i+1].col;
-            head.foreignKeyList[i].foreign_table_id = head.foreignKeyList[i+1].foreign_table_id;
-            head.foreignKeyList[i].foreign_col = head.foreignKeyList[i+1].foreign_col;
-            strcpy(head.foreignKeyList[i].name, head.foreignKeyList[i+1].name);
-        }
-        if(flag < head.foreignKeyTot)
-            head.foreignKeyTot--;
-        else if(flag == head.foreignKeyTot){
-            return 0;
-        }
-        else{
-            printf("[ERROR]Drop Error No Foreign Primary Key %s\n", fk_name);
-            return -1;
+    int8_t fkt = head.foreignKeyTot;
+    bool fk_flag[fkt];
+    for (int8_t i = 0; i < fkt; i++) {
+        if (strcmp(head.foreignKeyList[i].name, fk_name) == 0)
+            fk_flag[i] = false;
+        else
+            fk_flag[i] = true;
+    }
+    head.foreignKeyTot = 0;
+    for (int8_t i = 0; i < fkt; i++) {
+        if (fk_flag[i]) {
+            head.foreignKeyList[head.foreignKeyTot] = head.foreignKeyList[i];
+            head.foreignKeyTot++;
         }
     }
-    
-
 }
 
 void Table::dropPrimary() {
