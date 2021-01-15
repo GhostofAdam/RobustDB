@@ -311,7 +311,7 @@ select_expr_list:  column_ref {
                         $$ = (linked_list*)calloc(1,sizeof(linked_list));
                         $$->data = $1;
                     }
-                |select_expr_list ',' column_ref{
+                | select_expr_list ',' column_ref{
                         $$ = (linked_list*)calloc(1,sizeof(linked_list));
                         $1->next = $3;
                         $$->data = $1;
