@@ -1,0 +1,6 @@
+USE test;
+DESC region;
+INSERT INTO region VALUES (4,'CAN','COMMENT');
+INSERT INTO region VALUES (4,'CAN','COMMENT');
+INSERT INTO region VALUES (4,'CAN','COMMENT');
+EXIT;

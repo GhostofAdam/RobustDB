@@ -81,6 +81,7 @@ Table::~Table() {
 }
 
 void Table::create(const char* tableName) {
+    printf("head size %d\n", sizeof(head));
     assert(!this->ready);
     this->tableName = tableName;
     BufPageManager::getFileManager().createFile(tableName); // 创建table对应文件
@@ -262,16 +263,21 @@ int Table::getFooter(char *page, int idx) {
     return (tmp >> v) & 1;
 }
 
-void Table::createIndex(int col) {
-    //assert(head.pageTot == 1);
+void Table::createIndex(int col, char *name) {
     assert((head.hasIndex & (1 << col)) == 0);
+    if(name)
+        strcpy(head.indexName[col], name);
     head.hasIndex |= 1 << col;
 }
 
-void Table::dropIndex(int col) {
-    assert((head.hasIndex & (1 << col)));
-    head.hasIndex &= ~(1 << col);
-    colIndex[col].drop(permID, col);
+void Table::dropIndex(char *name) {
+    for(int col = 0; col<head.columnTot;col++){
+        if(strcmp(head.indexName[col],name) == 0){
+            assert((head.hasIndex & (1 << col)));
+            head.hasIndex &= ~(1 << col);
+            colIndex[col].drop(permID, col);
+        }
+    }
 }
 
 int Table::getFastCmp(RID_t rid, int col) {
@@ -342,7 +348,6 @@ void Table::dropRecord(RID_t rid) {
 }
 
 int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, expr_node *data){
-    printf("adding column: %s %d\n", name, type);
     for (int i = 0; i < head.columnTot; i++)    // 检查是否存在重复的列
         if (strcmp(head.columnName[i], name) == 0)
             return -1;
@@ -398,6 +403,7 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
     }
     assert(head.dataArrUsed <= MAX_DATA_SIZE);
     assert(head.recordByte <= PAGE_SIZE);
+    printf("--Added Column: %s\n", name);
     return id;
 }
 
@@ -419,7 +425,7 @@ bool Table::insert2Buffer(int col, const char *data){
             break;
         case CT_VARCHAR:
             if ((unsigned int) head.columnLen[col] < strlen(data)) {
-                printf("column %d len %u data %s\n",col, (unsigned int) head.columnLen[col], data);
+                printf("[ERROR]Varchar too long\n");
                 return false;
             }
             strcpy(buf + head.columnOffset[col], data);
@@ -441,7 +447,7 @@ bool Table::insert2Record(){
     auto error = checkRecord();
     if (!error.empty()) {
         printf("%s", error.c_str());
-        printf("Error occurred when inserting record, aborting...\n");
+        printf("[ERROR]Insert Error at RID %d\n", rid);
         return false;
     }
     int pageID = head.nextAvail / PAGE_SIZE;
@@ -533,16 +539,19 @@ int Table::dropColumn(const char *name) {
         strcpy(head.pkName[i], head.pkName[i + 1]);
     }
     head.columnTot--;
+    printf("--Dropped column %s\n", name);
     return id;
 }
 
 int Table::renameColumn(const char *old_col, const char *new_col) {
     for (int i = 0; i < head.columnTot; i++) {
         if (strcmp(head.columnName[i], old_col) == 0) {
+            printf("--Renamed Column From %s To %s\n", old_col, new_col);
             strcpy(head.columnName[i], new_col);
             return i;
         }
     }
+    printf("[ERROR]Rename Error No Such Column %s\n", old_col);
     return -1;
 }
 
@@ -562,44 +571,66 @@ int Table::addPrimary(const char *col, const char* pk_name) {
     for (int i = 0; i < head.columnTot; i++) {
         if (strcmp(head.columnName[i], col) == 0) {
             setPrimary(i);
-            if(pk_name!=nullptr)
+            printf("--Set Primary Key Column %s", col);
+            if(pk_name!=nullptr){
+                printf(" Primary Key Name %s", pk_name);
                 strcpy(head.pkName[i],pk_name);
+            }
+            printf("\n");
             return i;
         }
     }
     return -1;
 }
 
-int Table::dropPrimary_byname(const char *col) {
+int Table::dropPrimary_byname(const char *pk_name) {
+    int dd = -1;
     for (int i = 0; i < head.columnTot; i++) {
-        if (strcmp(head.pkName[i], col) == 0) {
+        if (strcmp(head.pkName[i], pk_name) == 0) {
+            printf("--Drop Primary Key Column %s\n", head.columnName[i]);
             head.isPrimary &= ~(1 << i);
             --head.primaryCount;
-            return i;
+            dd = i;
         }
     }
-    return -1;
+    if(dd == -1){
+        printf("[ERROR]Drop Error No Such Primary Key %s\n", pk_name);
+    }
+    return dd;
 }
 
 int Table::dropForeignByName(const char *fk_name){
     int flag = -1;
-    for (int i = 0; i < head.foreignKeyTot; i++, flag = i) {
-        if (strcmp(head.foreignKeyList[i].name, fk_name) == 0) {
-            break;
+    while (true)
+    {
+        for (int i = 0; i < head.foreignKeyTot; i++, flag = i) {
+            if (strcmp(head.foreignKeyList[i].name, fk_name) == 0) {
+                printf("--Drop Primary Key Column %d\n", head.foreignKeyList[i].col);
+                break;
+            }
+        }
+        for (int i = flag; i < head.foreignKeyTot -1; i++){
+            head.foreignKeyList[i].col = head.foreignKeyList[i+1].col;
+            head.foreignKeyList[i].foreign_table_id = head.foreignKeyList[i+1].foreign_table_id;
+            head.foreignKeyList[i].foreign_col = head.foreignKeyList[i+1].foreign_col;
+            strcpy(head.foreignKeyList[i].name, head.foreignKeyList[i+1].name);
+        }
+        if(flag < head.foreignKeyTot)
+            head.foreignKeyTot--;
+        else if(flag == head.foreignKeyTot){
+            return 0;
+        }
+        else{
+            printf("[ERROR]Drop Error No Foreign Primary Key %s\n", fk_name);
+            return -1;
         }
     }
-    for (int i = flag; i < head.foreignKeyTot -1; i++){
-        head.foreignKeyList[i].col = head.foreignKeyList[i+1].col;
-        head.foreignKeyList[i].foreign_table_id = head.foreignKeyList[i+1].foreign_table_id;
-        head.foreignKeyList[i].foreign_col = head.foreignKeyList[i+1].foreign_col;
-        strcpy(head.foreignKeyList[i].name, head.foreignKeyList[i+1].name);
-    }
-    if(flag < head.foreignKeyTot)
-        head.foreignKeyTot--;
-    return flag;
+    
+
 }
 
 void Table::dropPrimary() {
+    printf("--Drop ALL Primary Key Total %d\n", head.primaryCount);
     head.isPrimary = 0;
     head.primaryCount = 0;
 }
@@ -607,6 +638,7 @@ void Table::dropPrimary() {
 void Table::setPrimary(int col) {
     assert((head.notNull >> col) & 1);
     head.isPrimary |= (1 << col);
+    head.hasIndex |= (1 << col);
     ++head.primaryCount;
 }
 
@@ -621,6 +653,7 @@ void Table::addForeignKeyConstraint(unsigned int col, unsigned int foreignTableI
 }
 
 void Table::dropForeign() {
+    printf("--Drop ALL Foreign Key Total %d\n", head.foreignKeyTot);
     head.foreignKeyTot = 0;
 }
 
@@ -680,10 +713,10 @@ std::string Table::setTempRecord(int col, const char *data) {
             break;
         case CT_VARCHAR:
             if ((unsigned int) head.columnLen[col] < strlen(data)) {
-                printf("%d %s\n", head.columnLen[col], data);
+                printf("[ERROR]Varchar too long\n");
             }
             if (strlen(data) > (unsigned int) head.columnLen[col]) {
-                return "ERROR: varchar too long";
+                return "[ERROR]Varchar too long";
             }
             strcpy(buf + head.columnOffset[col], data);
             break;
@@ -814,16 +847,16 @@ std::string Table::checkForeignKeyConstraint() {
         auto localData = (buf + head.columnOffset[check.col]);
         auto dbms = DBMS::getInstance();
         if (!dbms->valueExistInTable(localData, check)) {
-            return "Insert Error: Value of column " + std::string(head.columnName[i])
-                   + " does not meet foreign key constraint";
+            return "[ERROR]Insert Error Value of column " + std::string(head.columnName[head.foreignKeyList[i].col])
+                   + " does not meet foreign key constraint\n";
         }
     }
     return std::string();
 }
 
 void Table::printTableDef() {
-    printf("columnTot %d \n", head.columnTot);
-    for (int i = 1; i < head.columnTot; i++) {
+    printf("ColumnTot %d \n", head.columnTot);
+    for (int i = 0; i < head.columnTot; i++) {
         printf("%s", head.columnName[i]);
         switch (head.columnType[i]) {
             case CT_INT:
@@ -846,16 +879,20 @@ void Table::printTableDef() {
         if (head.isPrimary & (1 << i)) printf(" Primary");
         printf("\n");
     }
+    for(int i = 0; i<head.foreignKeyTot;i++){
+        printf("Foreigner Key %s from %d to %d.%d\n",
+        head.foreignKeyList[i].name, head.foreignKeyList[i].col, head.foreignKeyList[i].foreign_table_id, head.foreignKeyList[i].foreign_col);
+    }
 }
 
 std::string Table::checkRecord() {
     unsigned int &notNull = *(unsigned int *) buf;
     if ((notNull & head.notNull) != head.notNull) {
-        return "Insert Error: not null column is null.";
+        return "[ERROR]Insert Error Get Null in not Null Column\n";
     }
     if(!noCheck){
         if (!checkPrimary()) {
-            return "ERROR: Primary Key Conflict";
+            return "[ERROR]Primary Key Conflict\n";
         }
         auto foreignKeyCheck = checkForeignKeyConstraint();
         if (!foreignKeyCheck.empty()) {

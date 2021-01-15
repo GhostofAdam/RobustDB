@@ -27,8 +27,8 @@ public:
     void dropForeignByName(const char *table, const char *fk_name);
     bool addConstraint(const char *table, const char *cons_name, table_constraint *cons);
     void dropForeign(const char *table);
-    void createIndex(column_ref *tb_col);
-    void dropIndex(column_ref *tb_col);
+    void createIndex(index_argu *tb_col);
+    void dropIndex(index_argu *tb_col);
     void descTable(const char *name);
     bool valueExistInTable(const char* value, const ForeignKey& key);
 private:
