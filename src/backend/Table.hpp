@@ -42,6 +42,7 @@ struct TableHead {
     ForeignKey foreignKeyList[MAX_FOREIGN_KEY];
     char dataArr[MAX_DATA_SIZE];
     char pkName[MAX_COLUMN_SIZE][MAX_NAME_LEN];
+    char indexName[MAX_COLUMN_SIZE][MAX_NAME_LEN];
 };
 class Table{
     friend class Database;
@@ -95,8 +96,8 @@ public:
     bool insert2Record();
     void clearBuffer();
     void resetBuffer();
-    void createIndex(int col);
-    void dropIndex(int col);
+    void createIndex(int col, char *name = nullptr);
+    void dropIndex(char *name);
     bool hasIndex(int col){return (head.hasIndex & (1 << col)) != 0;}
     void initTempRecord();
     void clearTempRecord();

@@ -175,13 +175,17 @@ create_idx_stmt: CREATE INDEX IDENTIFIER ON IDENTIFIER '(' column_list ')' {
                 }
                 ;
 
-drop_idx_stmt: DROP INDEX IDENTIFIER{
+drop_idx_stmt: DROP INDEX IDENTIFIER ON IDENTIFIER{
                 $$=(index_argu*)malloc(sizeof(index_argu));
-                $$->index_name=$3;}
+                $$->index_name=$3;
+                $$->table=$5;
+                $$->columns=NULL;
+                }
                 | ALTER TABLE IDENTIFIER DROP INDEX IDENTIFIER{
                 $$=(index_argu*)malloc(sizeof(index_argu));
                 $$->index_name=$6;
                 $$->table=$3;
+                $$->columns=NULL;
                 }
                 ;
 

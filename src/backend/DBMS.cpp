@@ -36,7 +36,7 @@ expr_node DBMS::dbTypeToExprType(char *data, ColumnType type) {
             v.literal_i = *(int *) data;
             break;
         default:
-            printf("Error: Unhandled type\n");
+            printf("[ERROR]Unhandled Data Type\n");
             assert(0);
     }
     return v;
@@ -105,7 +105,7 @@ char *DBMS::ExprTypeToDbType(const expr_node *val, term_type desiredType) {
             ret = nullptr;
             break;
         default:
-            printf("Error: Unhandled type\n");
+            printf("[ERROR]Unhandled Data Type\n");
             assert(false);
     }
     return ret;
@@ -154,14 +154,14 @@ void DBMS::switchToDB(const char *name) {
 
 void DBMS::createTable(const table_def *table) {
     if (!current->isOpen()){
-        printf("Current Database is not open!\n");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
         
     assert(table->name != NULL);
     const char *name = (const char *) table->name;
     if (current->getTableByName(name)) {
-        printf("Table `%s` already exists\n", table->name);
+        printf("[ERROR]Table %s already exists\n", table->name);
         return;
     }
     Table *tab = current->createTable(table->name);
@@ -200,7 +200,7 @@ void DBMS::createTable(const table_def *table) {
                                 column->flags->default_value);
         succeed = id != -1;
         if(!succeed){
-            printf("Column %s exits\n", column->name);
+            printf("[ERROR]Column %s exits\n", column->name);
             break;
         }
     }
@@ -217,7 +217,7 @@ void DBMS::createTable(const table_def *table) {
     if (!succeed)
         current->dropTableByName(table->name);
     else
-        printf("Table %s created\n", table->name);
+        printf("--Table %s created\n", table->name);
 }
 
 void DBMS::dropDB(const char *db_name) {
@@ -227,38 +227,36 @@ void DBMS::dropDB(const char *db_name) {
     db.open(db_name);
     if (db.isOpen()) {
         db.drop();
-        printf("Database %s dropped!\n", db_name);
+        printf("[ERROR]Database %s dropped!\n", db_name);
     } else {
-        printf("Failed to open database %s\n", db_name);
+        printf("[ERROR]Failed to open database %s\n", db_name);
     }
 }
 
 void DBMS::dropTable(const char *table) {
     if (!current->isOpen()){
-        printf("Database is not open!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     current->dropTableByName(table);
-    printf("Table %s dropped!\n", table);
+    printf("[ERROR]Table %s dropped!\n", table);
 }
 
 void DBMS::showTables() {
     if (!current->isOpen()){
-        printf("Database is not open!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
-    printf("Show all the tables:\n");
-    printf("***********\n");
+    printf("--Show all the tables:\n");
     for (auto table : current->getTableNames()) {
-        printf("%s\n", table.c_str());
+        printf("--Table: %s\n", table.c_str());
     }
-    printf("***********\n");
 }
 
 void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, condition_tree *condition) {
     int flags;
     if (!current->isOpen()){
-        printf("Database is not open!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     linked_list *openedTables = nullptr;
@@ -267,7 +265,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         Table *tb;
         auto *table = (const char *) tables->data;
         if (!(tb = current->getTableByName(table))) {
-            printf("Table %s not found\n", table);
+            printf("[ERROR]Table %s not found\n", table);
             allOpened = false;
         }
         auto *t = (linked_list *) malloc(sizeof(linked_list));
@@ -284,7 +282,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         Table*  tb = (Table *)i->data;
         std::cout<<tb->tableName<<std::endl;
         auto results = selectRidfromTable(tb, condition);
-        printf("%ld\n", results.size());
+        printf("--Selected %ld rows from Table %s", results.size(), tb->tableName.c_str());
     }
     freeLinkedList(openedTables);
 }
@@ -417,7 +415,7 @@ bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
         return right || left;
     }
     else{
-        printf("wrong condition tree!\n");
+        printf("[ERROR]Wrong Condition Tree!\n");
         assert(0);
         return false;
     }
@@ -523,11 +521,11 @@ RID_t DBMS::nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t ri
 void DBMS::updateRow(const char *table, condition_tree *condition, column_ref *column, expr_node *eval) {
     Table *tb;
     if (!current->isOpen()){
-        printf("Database is not open!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
 
@@ -535,7 +533,7 @@ void DBMS::updateRow(const char *table, condition_tree *condition, column_ref *c
     col_to_update = tb->getColumnID(column->column);
     auto colType = tb->getColumnType(col_to_update);
     if (col_to_update == -1) {
-        printf("Column %s not found\n", column->column);
+        printf("[ERROR]Column %s not found\n", column->column);
         return;
     }
     auto resutls = selectRidfromTable(tb, condition);
@@ -545,35 +543,35 @@ void DBMS::updateRow(const char *table, condition_tree *condition, column_ref *c
                                                ExprTypeToDbType(eval, ColumnTypeToExprType(colType)));
     }
     
-    printf("%d rows updated.\n", (int )resutls.size());
+    printf("--Updated %d rows\n", (int )resutls.size());
 }
 
 void DBMS::deleteRow(const char *table, condition_tree *condition) {
     std::vector<RID_t> toBeDeleted;
     Table *tb;
     if (!current->isOpen()){
-        printf("Database is not open!");
+        printf("[ERROR]Current Database is not open!");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     toBeDeleted = selectRidfromTable(tb, condition);
     for (const auto &i : toBeDeleted) {
         tb->dropRecord(i);
     }
-    printf("%d rows deleted.\n", (int) toBeDeleted.size());
+    printf("--Deleted %d rows\n", (int) toBeDeleted.size());
 }
 
 void DBMS::insertRow(const char *table, const linked_list *columns, const linked_list *values) {
     if (!current->isOpen()){
-        printf("Database is not open!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     Table *tb =  current->getTableByName(table);
     if (!tb) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     std::vector<int> colId;
@@ -587,13 +585,12 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
             auto name = col->column;
             int id = tb->getColumnID(name);
             if (id < 0) {
-                printf("Column %s not found\n", col->column);
+                printf("[ERROR]Column %s not found\n", col->column);
                 return;
             }
             colId.push_back(id);
         }
     }
-    printf("Inserting into %lu columns\n", colId.size());
     tb->clearBuffer();
     int count = 0;
     for (const linked_list *i = values; i; i = i->next) {
@@ -603,7 +600,7 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
             cnt++;
         }
         if (cnt != colId.size()) {
-            printf("Column size mismatch, will not execute (value size=%d)\n", cnt);
+            printf("[ERROR]Column Number Mismatch, (Value Number=%d)\n", cnt);
             continue;   
         }
         auto it = colId.begin();
@@ -612,7 +609,7 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
             auto val = (expr_node *) j->data;
             auto colType = tb->getColumnType(*it);
             if (!checkColumnType(colType, val)) {
-                printf("Wrong data type\n");
+                printf("[ERROR]Wrong Data Type\n");
                 return;
             }
             auto exprType = ColumnTypeToExprType(colType);
@@ -631,17 +628,17 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
         }
         
     }
-    printf("%d rows inserted.\n", count);
+    printf("--Inserted %d rows\n", count);
 }
 
 void DBMS::addColumn(const char *table, struct column_defs *col_def) {
     Table *tb;
     if (!current->isOpen()) {
-        printf("%s\n", "Please USE database first!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     while (col_def != nullptr) {
@@ -652,7 +649,7 @@ void DBMS::addColumn(const char *table, struct column_defs *col_def) {
                               col_def->flags->default_value);
         col_def = col_def->next;
         if (id == -1) {
-            printf("Column %s exits\n", col_def->name);
+            printf("[ERROR]Column %s exits\n", col_def->name);
         }
     }
 }
@@ -660,89 +657,88 @@ void DBMS::addColumn(const char *table, struct column_defs *col_def) {
 void DBMS::dropColumn(const char *table, struct column_ref *tb_col) {
     Table *tb;
     if (!current->isOpen()) {
-        printf("%s\n", "Please USE database first!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     int id = tb->dropColumn(tb_col->column);
     if (id == -1) {
-        printf("Column %s doesn't exist\n", tb_col->column);
+        printf("[ERROR]Column %s doesn't exist\n", tb_col->column);
     }
 }
 
 void DBMS::renameColumn(const char *table, const char *old_col, const char *new_col) {
     Table *tb;
     if (!current->isOpen()) {
-        printf("%s\n", "Please USE database first!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     int id = tb->renameColumn(old_col, new_col);
     if (id == -1) {
-        printf("Column %s doesn't exist\n", old_col);
+        printf("[ERROR]Column %s doesn't exist\n", old_col);
     }
 }
 
 void DBMS::addPrimary(const char *table, const char *col) {
     Table *tb;
     if (!current->isOpen()) {
-        printf("%s\n", "Please USE database first!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     int id = tb->addPrimary(col);
     if (id == -1) {
-        printf("Column %s doesn't exist\n", col);
+        printf("[ERROR]Column %s doesn't exist\n", col);
     }
 }
 
 void DBMS::dropPrimary(const char *table) {
     Table *tb;
     if (!current->isOpen()) {
-        printf("%s\n", "Please USE database first!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     tb->dropPrimary();
 }
 
 void DBMS::dropPrimary_byname(const char *table, const char *col) {
-    printf("drop %s primary key byname %s\n",table, col);
     Table *tb;
     if (!current->isOpen()) {
-        printf("%s\n", "Please USE database first!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     int id = tb->dropPrimary_byname(col);
     if (id == -1) {
-        printf("Column %s doesn't exist\n", col);
+        printf("[ERROR]Column %s doesn't exist\n", col);
     }
 }
 
 bool DBMS::addConstraint(const char *table, const char *cons_name, table_constraint *cons) {
     Table *tb, *tb_cons;
     if (!current->isOpen()) {
-        printf("%s\n", "Please USE database first!");
+        printf("[ERROR]Current Database is not open!\n");
         return false;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return false;
     }
     if(cons->type == CONSTRAINT_PRIMARY_KEY){
@@ -754,7 +750,7 @@ bool DBMS::addConstraint(const char *table, const char *cons_name, table_constra
     }
     else if(cons->type == CONSTRAINT_FOREIGN_KEY){
         if (!(tb_cons = current->getTableByName(cons->foreign_table_name))) {
-            printf("Foreign Table %s not found\n", cons->foreign_table_name);
+            printf("[ERROR]Foreign Table %s not found\n", cons->foreign_table_name);
             return false;
         }
         linked_list* column_list = cons->column_list;
@@ -769,7 +765,7 @@ bool DBMS::addConstraint(const char *table, const char *cons_name, table_constra
         }
     }
     else{
-        printf("Wrong constraint type\n");
+        printf("[ERROR]Wrong Constraint Type\n");
         return false;
     }
     return true;
@@ -778,63 +774,61 @@ bool DBMS::addConstraint(const char *table, const char *cons_name, table_constra
 void DBMS::dropForeign(const char *table) {
     Table *tb;
     if (!current->isOpen()) {
-        printf("%s\n", "Please USE database first!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     if (!(tb = current->getTableByName(table))) {
-        printf("Table %s not found\n", table);
+        printf("[ERROR]Table %s not found\n", table);
         return;
     }
     tb->dropForeign();
 }
 
-void DBMS::createIndex(column_ref *tb_col) {
+void DBMS::createIndex(index_argu *idx_stmt) {
     Table *tb;
     if (!current->isOpen()){
-        printf("Database is not open!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
-    auto name = (const char*) tb_col->table;
-    if (!(tb = current->getTableByName(tb_col->table))) {
-        printf("Table %s not found\n", tb_col->table);
+    if (!(tb = current->getTableByName(idx_stmt->table))) {
+        printf("[ERROR]Table %s not found\n", idx_stmt->table);
         return;
     }
-    int t = tb->getColumnID(tb_col->column);
-    if (t == -1) {
-        printf("Column %s not exist\n", tb_col->column);
-    } else
-        tb->createIndex(t);
+    linked_list* column_list = idx_stmt->columns;
+    for (; column_list; column_list = column_list->next) {
+        char* column = ((column_ref*)column_list->data)->column;
+        int t = tb->getColumnID(column);
+        if (t == -1) {
+            printf("[ERROR]Column %s not exist\n", column);
+        } else{
+            printf("--Create Index %s on Column %s\n", idx_stmt->index_name, column);
+            tb->createIndex(t,idx_stmt->index_name);
+        }
+    }
 }
 
-void DBMS::dropIndex(column_ref *tb_col) {
+void DBMS::dropIndex(index_argu *idx_stmt) {
     Table *tb;
     if (!current->isOpen()){
-        printf("Database is not open!");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
-    if (!(tb = current->getTableByName(tb_col->table))) {
-        printf("Table %s not found\n", tb_col->table);
+    if (!(tb = current->getTableByName(idx_stmt->table))) {
+        printf("[ERROR]Table %s not found\n", idx_stmt->table);
         return;
     }
-    int t = tb->getColumnID(tb_col->column);
-    if (t == -1) {
-        printf("Column %s not exist\n", tb_col->column);
-    } else if (!tb->hasIndex(t)) {
-        printf("No index on %s(%s)\n", tb_col->table, tb_col->column);
-    } else {
-        tb->dropIndex(t);
-    }
+    tb->dropIndex(idx_stmt->index_name);
 }
 
 void DBMS::descTable(const char *name) {
     Table *tb;
     if (!current->isOpen()){
-        printf("Database is not open!\n");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     tb = current->getTableByName(name);
     if (!tb) {
-        printf("Table name %s not found\n", name);
+        printf("[ERROR]Table name %s not found\n", name);
         return;
     }
     tb->printTableDef();
@@ -849,12 +843,12 @@ void DBMS::dropForeignByName(const char *table, const char *fk_name){
     printf("drop %s foreign key byname %s\n",table, fk_name);
     Table *tb;
     if (!current->isOpen()){
-        printf("Database is not open!\n");
+        printf("[ERROR]Current Database is not open!\n");
         return;
     }
     tb = current->getTableByName(table);
     if (!tb) {
-        printf("Table name %s not found\n", table);
+        printf("[ERROR]Table name %s not found\n", table);
         return;
     }
     tb->dropForeignByName(fk_name);

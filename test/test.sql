@@ -19,7 +19,6 @@ CREATE TABLE supplier (
 	PRIMARY KEY (S_SUPPKEY)
 );
 
-
 ALTER TABLE supplier ADD CONSTRAINT FK_NAME FOREIGN KEY  (S_NATIONKEY) REFERENCES nation(N_NATIONKEY);
 INSERT INTO nation VALUES (0,'a', 0,'a'),(1,'a', 0,'a'),(2,'a', 0,'a'),(3,'a', 0,'a');
 INSERT INTO supplier VALUES (0,'a','b',4);

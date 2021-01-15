@@ -8,6 +8,8 @@ CREATE TABLE customer(
 );
 SHOW TABLES;
 DESC customer;
-INSERT INTO customer VALUES (0,'a','b'),(1,'a','b'),(2,'a','b'),(3,'a','b');
-SELECT * FROM customer WHERE name = 'a';
+CREATE INDEX index_1 on customer (name, gender);
+DESC customer;
+DROP INDEX index_1 on customer;
+DESC customer;
 EXIT;

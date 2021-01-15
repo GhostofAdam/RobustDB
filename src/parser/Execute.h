@@ -22,8 +22,8 @@ void execute_sql_eof(void);
 void execute_select(struct select_argu *stmt);
 void execute_delete(struct delete_argu *stmt);
 void execute_update(struct update_argu *stmt);
-void execute_drop_idx(struct column_ref *tb_col);
-void execute_create_idx(struct column_ref *tb_col);
+void execute_drop_idx(struct index_argu *tb_col);
+void execute_create_idx(struct index_argu *tb_col);
 
 void execute_add_column(const char *tb_name, struct column_defs *col_def);
 void execute_drop_column(const char *tb_name, struct column_ref *tb_col);

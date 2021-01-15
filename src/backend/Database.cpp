@@ -35,7 +35,6 @@ void Database::open(const string &name) {
 }
 
 void Database::close() {
-    printf("closing db %s\n", this->dbName.c_str());
     assert(this->ready);
     FILE *file = fopen((this->dbName + ".db").c_str(), "w");
     int tableSize = this->table.size();
@@ -91,7 +90,7 @@ void Database::dropTableByName(const std::string &name) {
             break;
         }
     if (p == -1) {
-        printf("drop Table: Table not found!\n");
+        printf("[ERROR]Drop Table Error: Table not found!\n");
         return;
     }
     table[p]->drop();
@@ -132,7 +131,7 @@ bool Database::setPrimaryKey(Table* tab, const char* column_name){
     bool succeed = true;
     int t = tab->getColumnID(column_name);
     if (t == -1) {
-        printf("Primary key constraint: Column %s does not exist\n", column_name);
+        printf("[ERROR]Add Primary Key Error: Column %s does not exist\n", column_name);
         return false;
     }
     tab->createIndex(t);
@@ -143,32 +142,33 @@ bool Database::setPrimaryKey(Table* tab, const char* column_name){
 bool Database::setForeignKey(Table* tab, const char* column_name, const char* foreign_table_name, const char* foreign_column_name){
     int t = tab->getColumnID(column_name);
     if (t == -1) {
-        printf("Foreign key constraint: Column %s does not exist\n", column_name);
+        printf("[ERROR]Add Foreign Key Error: Column %s does not exist\n", column_name);
         return false;
     }
     if (tab->getColumnType(t) != CT_INT) {
-        printf("Foreign key constraint: Column %s must be int.\n", column_name);
+        printf("[ERROR]Add Foreign Key Error: Column %s must be int.\n", column_name);
         return false;
     }
     auto foreign_table = getTableByName(foreign_table_name);
     if (foreign_table == nullptr) {
-        printf("Foreign key constraint: Foreign table %s does not exist\n", foreign_table_name);
+        printf("[ERROR]Add Foreign Key Error: Foreign table %s does not exist\n", foreign_table_name);
         return false;
     }
     auto foreign_col = foreign_table->getColumnID(foreign_column_name);
     if (foreign_col == -1) {
-        printf("Foreign key constraint: Foreign column %s does not exist\n", foreign_column_name);
+        printf("[ERROR]Add Foreign Key Error: Foreign column %s does not exist\n", foreign_column_name);
         return false;
     }
     if (tab->getColumnType(t) != foreign_table->getColumnType(foreign_col)) {
-        printf("Foreign key constraint: Type of foreign column %s does not match %s\n",
+        printf("[ERROR]Add Foreign Key Error: Type of foreign column %s does not match %s\n",
                 foreign_column_name, column_name);
         return false;
     }
     if (!foreign_table->hasIndex(foreign_col)) {
-        printf("Foreign key constraint: Foreign column %s must be indexed.\n", foreign_column_name);
+        printf("[ERROR]Add Foreign Key Error: Foreign column %s must be indexed.\n", foreign_column_name);
         return false;
     }
+    printf("--Add Foreign Key Error: Column %s Foreign Table %s Foreign Column Name %s \n",column_name, foreign_table_name,foreign_column_name);
     tab->addForeignKeyConstraint(t, (int) foreign_table->permID, foreign_col);
     return true;
 }
