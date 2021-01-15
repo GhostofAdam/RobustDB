@@ -27,15 +27,18 @@ def main():
         else:
             print(filename)
             raise NotImplementedError
+        fr.write("INSERT INTO {} VALUES ".format(table_name))
+        data_per = []
         for line in lines:
             line = line.strip().split("|")
             if filename.endswith(".tbl"):
                 line = line[:-1]
             if len(line) == len(table_map):
-                fr.write("INSERT INTO {} VALUES ".format(table_name) + "(" + ",".join(["\'{}\'".format(x) if y else x for x, y in zip(line, table_map)]) + ");\n")
+                data_per.append("(" + ",".join(["\'{}\'".format(x) if y else x for x, y in zip(line, table_map)]) + ")")
             else:
-                print(line)
-        fr.write("\n\n")
+                pass
+        fr.write(",".join([x for x in data_per]))
+        fr.write(";\n")
     fr.close()
 
 
