@@ -911,16 +911,16 @@ std::string Table::checkForeignKeyConstraint() {
         auto localData = (buf + head.columnOffset[check.col]);
         auto dbms = DBMS::getInstance();
         if (!dbms->valueExistInTable(localData, check)) {
-            return "Insert Error: Value of column " + std::string(head.columnName[i])
-                   + " does not meet foreign key constraint";
+            return "[ERROR]Insert Error Value of column " + std::string(head.columnName[head.foreignKeyList[i].col])
+                   + " does not meet foreign key constraint\n";
         }
     }
     return std::string();
 }
 
 void Table::printTableDef() {
-    printf("columnTot %d \n", head.columnTot);
-    for (int i = 1; i < head.columnTot; i++) {
+    printf("ColumnTot %d \n", head.columnTot);
+    for (int i = 0; i < head.columnTot; i++) {
         printf("%s", head.columnName[i]);
         switch (head.columnType[i]) {
             case CT_INT:
@@ -943,16 +943,20 @@ void Table::printTableDef() {
         if (head.isPrimary & (1 << i)) printf(" Primary");
         printf("\n");
     }
+    for(int i = 0; i<head.foreignKeyTot;i++){
+        printf("Foreigner Key %s from %d to %d.%d\n",
+        head.foreignKeyList[i].name, head.foreignKeyList[i].col, head.foreignKeyList[i].foreign_table_id, head.foreignKeyList[i].foreign_col);
+    }
 }
 
 std::string Table::checkRecord() {
     unsigned int &notNull = *(unsigned int *) buf;
     if ((notNull & head.notNull) != head.notNull) {
-        return "Insert Error: not null column is null.";
+        return "[ERROR]Insert Error Get Null in not Null Column\n";
     }
     if(!noCheck){
         if (!checkPrimary()) {
-            return "ERROR: Primary Key Conflict";
+            return "[ERROR]Primary Key Conflict\n";
         }
         auto foreignKeyCheck = checkForeignKeyConstraint();
         if (!foreignKeyCheck.empty()) {

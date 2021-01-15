@@ -134,7 +134,7 @@ void execute_use_db(const char *db_name) {
 }
 
 void execute_insert_row(struct insert_argu *stmt) {
-    printf("--Insert Rows\n");
+    printf("--Insert Rows to Table %s\n", stmt->table);
     assert(stmt->table);
     DBMS::getInstance()->insertRow(stmt->table, stmt->columns, stmt->values);
     free_column_list(stmt->columns);
