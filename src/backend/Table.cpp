@@ -386,9 +386,9 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             }
             break;
         case CT_VARCHAR:
-            head.recordByte += MAX_NAME_LEN + 1;
+            head.recordByte += MAX_DATA_LEN + 1;
             head.recordByte += 4 - head.recordByte % 4;
-            head.columnLen[id] = MAX_NAME_LEN;
+            head.columnLen[id] = MAX_DATA_LEN;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
                 strcpy(head.dataArr + head.dataArrUsed, data->literal_s);
@@ -485,7 +485,7 @@ int Table::dropColumn(const char *name) {
             break;
         }
         case CT_VARCHAR:{
-            int data_len = MAX_NAME_LEN + 1 + 4 - (MAX_NAME_LEN + 1) % 4;
+            int data_len = MAX_DATA_LEN + 1 + 4 - (MAX_DATA_LEN + 1) % 4;
             head.recordByte -= data_len;
             int offset = head.defaultOffset[id];
             if (head.defaultOffset[id] != -1) {
