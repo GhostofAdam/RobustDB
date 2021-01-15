@@ -190,7 +190,7 @@ drop_idx_stmt: DROP INDEX IDENTIFIER ON IDENTIFIER{
                 ;
 
 alterStmt : ALTER TABLE IDENTIFIER ADD column_dec{ execute_add_column($3,$5); }
-		| ALTER TABLE IDENTIFIER DROP IDENTIFIER{ execute_drop_column($3,$5); }
+		| ALTER TABLE IDENTIFIER DROP column_ref{ execute_drop_column($3,$5); }
 		| ALTER TABLE IDENTIFIER CHANGE IDENTIFIER column_dec{
             execute_change_column($3,$5,$6);
         }
