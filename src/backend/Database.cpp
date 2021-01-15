@@ -176,6 +176,10 @@ void Database::renameTable(const char *old_table, const char *new_table){
     for(int i=0;i<tableName.size();i++){
         if(strcmp(tableName[i].c_str(),old_table)==0){
             printf("--Renamed Table %s to %s\n",old_table,new_table);
+            close();
+            std::string new_t(new_table);
+            rename((this->dbName + "." + this->tableName[i] + ".table").c_str(), (this->dbName + "." + new_t + ".table").c_str());
+            open(this->dbName);
             tableName[i] = new_table;
         }
     }
