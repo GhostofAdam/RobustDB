@@ -6,14 +6,6 @@
 
 extern bool noCheck;
 
-struct Check {
-    int col;
-    int offset;
-    
-    OpType op;
-    RelType rel;
-};
-
 struct ForeignKey {
     unsigned int col;
     unsigned int foreign_table_id;
@@ -100,6 +92,7 @@ public:
     void initTempRecord();
     void clearTempRecord();
     void setTempRecordNull(int col);
+    void changeColumn(const char *col, struct column_defs *col_def);
     std::string setTempRecord(int col, const char *data);
     std::string insertTempRecord();
     std::string checkRecord();

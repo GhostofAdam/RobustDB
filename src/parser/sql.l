@@ -87,6 +87,8 @@ add|ADD                             { return ADD; }
 tables|TABLES                       { return TABLES; }
 constraint|CONSTRAINT               { return CONSTRAINT; }
 to|TO                               { return TO; }
+rename|RENAME                       { return RENAME;}
+change|CHANGE                       { return CHANGE;}
 {ID_FORMAT}                         { yylval.val_s = strdup(yytext); return IDENTIFIER; }
 {DATE_FORMAT}                       { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return DATE_LITERAL;}
 {STRING_FORMAT}                     { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return STRING_LITERAL; }

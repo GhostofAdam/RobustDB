@@ -18,7 +18,6 @@ void Index::load(int tab, int col) {
 } 
 
 void Index::store(int tab, int col) {
-    //printf("storing index %d %d\n",tab,col);
     ofstream stm(getFilename(tab, col).c_str());
     this->list.dump(stm);
 }

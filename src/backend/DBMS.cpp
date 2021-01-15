@@ -58,7 +58,7 @@ term_type DBMS::ColumnTypeToExprType(const ColumnType &type) {
 }
 
 bool DBMS::checkColumnType(ColumnType type, const expr_node *val) {
-    if (val->node_type == TERM_NONE)
+    if (val->node_type == TERM_NONE || val->node_type == TERM_NULL)
         return true;
     switch (val->node_type) {
         case TERM_INT:
@@ -195,8 +195,8 @@ void DBMS::createTable(const table_def *table) {
         column = (*i);
         int id = tab->addColumn(column->name, 
                                 type,
-                                (bool) column->flags->flags & COLUMN_FLAG_NOTNULL,
-                                (bool) column->flags->flags & COLUMN_FLAG_DEFAULT,
+                                (bool) (column->flags->flags & COLUMN_FLAG_NOTNULL),
+                                (bool) (column->flags->flags & COLUMN_FLAG_DEFAULT),
                                 column->flags->default_value);
         succeed = id != -1;
         if(!succeed){
@@ -396,6 +396,8 @@ bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
         else {
             assert(0);
         }
+        printf("[ERROR]Wrong Record Type\n");
+        return false;
     }
     
     
@@ -840,7 +842,7 @@ bool DBMS::valueExistInTable(const char *value, const ForeignKey &key) {
     return result != (RID_t) -1;
 }
 void DBMS::dropForeignByName(const char *table, const char *fk_name){
-    printf("drop %s foreign key byname %s\n",table, fk_name);
+    printf("--Drop %s foreign key byname %s\n",table, fk_name);
     Table *tb;
     if (!current->isOpen()){
         printf("[ERROR]Current Database is not open!\n");
@@ -852,4 +854,24 @@ void DBMS::dropForeignByName(const char *table, const char *fk_name){
         return;
     }
     tb->dropForeignByName(fk_name);
+}
+void DBMS::renameTable(const char *old_table, const char *new_table){
+    if (!current->isOpen()){
+        printf("[ERROR]Current Database is not open!\n");
+        return;
+    }
+    current->renameTable(old_table,new_table);
+}
+void DBMS::changeColumn(const char *tb_name, const char *col, struct column_defs *col_def){
+    if (!current->isOpen()){
+        printf("[ERROR]Current Database is not open!\n");
+        return;
+    }
+    Table *tb;
+    tb = current->getTableByName(tb_name);
+    if (!tb) {
+        printf("[ERROR]Table name %s not found\n", tb_name);
+        return;
+    }
+    tb->changeColumn(col,col_def);
 }
