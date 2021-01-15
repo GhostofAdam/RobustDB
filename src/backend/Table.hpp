@@ -45,6 +45,21 @@ struct TableHead {
 };
 class Table{
     friend class Database;
+private:
+    TableHead head;
+    
+    Index colIndex[MAX_COLUMN_SIZE];
+    int fileID, permID;
+    char *buf;
+    bool ready;
+    void create(const char* tableName);
+    void open(const char* tableName);
+    void close();
+    void drop();
+    void loadIndex();
+    void storeIndex();
+    void dropIndex();
+    
 public:
     Table();
     ~Table();
@@ -106,18 +121,5 @@ public:
     RID_t selectIndexUpperBoundNull(int col);
     RID_t selectReveredIndexNext(int col);
     string tableName;
-private:
-    TableHead head;
-    
-    Index colIndex[MAX_COLUMN_SIZE];
-    int fileID, permID;
-    char *buf;
-    bool ready;
-    void create(const char* tableName);
-    void open(const char* tableName);
-    void close();
-    void drop();
-    void loadIndex();
-    void storeIndex();
-    void dropIndex();
+
 };

@@ -14,9 +14,6 @@ mapping = {"part": [False, True, True, True, True, False, True, False, True],
 def main():
     dir = "./dataset_test"
     fr = open("./init.sql", "w")
-    with open("./build.sql", "r", encoding="utf-8") as f:
-        fr.writelines(f.readlines())
-    fr.write("\n\n")
     for filename in list(os.listdir(dir)):
         table_name = filename.split(".")[0]
         table_map = mapping[table_name]

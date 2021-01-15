@@ -24,7 +24,7 @@ extern "C" {
 
 
 //----------------------TABLE--------------------------------------
-#define MAX_COLUMN_SIZE 16
+#define MAX_COLUMN_SIZE 8
 // both table name and column name
 #define MAX_NAME_LEN 128
 #define MAX_DATA_SIZE 3000

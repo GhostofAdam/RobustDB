@@ -114,7 +114,7 @@ void Table::open(const char* tableName) {
     this->permID = BufPageManager::getFileManager().getFilePermID(fileID);
     RegisterManager::getInstance().checkIn(permID, this);
     int index = BufPageManager::getInstance().getPage(fileID, 0);   // 为文件首页在缓存中找到对应缓存页面
-    memcpy(&head, BufPageManager::getInstance().access(index), sizeof(TableHead));
+    memcpy(&(this->head), BufPageManager::getInstance().access(index), sizeof(TableHead));
     this->ready = true;
     this->buf = nullptr;
     for (auto &col: this->colIndex)
@@ -123,12 +123,11 @@ void Table::open(const char* tableName) {
 }
 
 void Table::close() {
-    //printf("closing tb\n");
-    //printf("head data %d\n", *(int*)(&head));
     assert(this->ready);
     storeIndex();
     int index = BufPageManager::getInstance().getPage(fileID, 0);
-    memcpy(BufPageManager::getInstance().access(index), &head, sizeof(TableHead));
+    memcpy(BufPageManager::getInstance().access(index), &(this->head), sizeof(this->head));
+
     BufPageManager::getInstance().markDirty(index);
     RegisterManager::getInstance().checkOut(permID);
     BufPageManager::getInstance().closeFile(fileID);

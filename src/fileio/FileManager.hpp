@@ -57,13 +57,10 @@ public:
         int file = fileList[fileID];
         off_t offset = pageID;
         offset <<= PAGE_IDX;
-        //printf("write back fileId %d\n", file);
-        printf("write data offset %d\n", offset);
-        const char msg[] = "Fuck writing fuck fuck\n";
-        write(STDOUT_FILENO, msg, sizeof(msg)-1);
-        
-        assert(lseek(STDOUT_FILENO , offset, SEEK_SET) == offset);
-        assert(write(STDOUT_FILENO , (void *) buf, PAGE_SIZE) == PAGE_SIZE);
+        int res = lseek(file , offset, SEEK_SET);
+        assert(res == offset);
+        res = write(file , (void *) buf, PAGE_SIZE);
+        assert(res == PAGE_SIZE);
     }
 
     void readPage(int fileID, int pageID, char *buf) {
@@ -71,8 +68,10 @@ public:
         int file = fileList[fileID];
         off_t offset = pageID;
         offset <<= PAGE_IDX;
-        assert(lseek(file, offset, SEEK_SET) == offset);
-        assert(read(file, (void *) buf, PAGE_SIZE) == PAGE_SIZE);
+        int res = lseek(file , offset, SEEK_SET);
+        assert(res == offset);
+        res = read(file , (void *) buf, PAGE_SIZE);
+        assert(res == PAGE_SIZE);
     }
 
     void createFile(const char *name) {
@@ -87,13 +86,12 @@ public:
         isOpen[fileID] = 0;
         int file = fileList[fileID];
         perm2temp.erase(filePermID[fileID]);
-        assert(close(file) == 0);
-        //printf("close file %d\n", file);
+        int res = close(file);
+        assert(res == 0);
         idStack[idStackTop++] = fileID;
     }
 
     int openFile(const char *name) {
-        //printf("open file %s\n",name);
         assert(idStackTop);
         int fileID = idStack[--idStackTop];
         isOpen[fileID] = 1;
@@ -101,7 +99,6 @@ public:
         perm2temp[filePermID[fileID]] = fileID;
         int file = open(name, O_RDWR);
         assert(file != -1);
-        //printf("open file id %d\n",file);
         fileList[fileID] = file;
         return fileID;
     }

@@ -76,6 +76,7 @@ public:
     }
 
     int getPage(int fileID, int pageID) {
+
         int index = hash->findIndex(fileID, pageID);
         if (index != -1) {
             access(index);
@@ -87,6 +88,7 @@ public:
     }
 
     char *access(int index) {
+        
         if (index != last) {
             replace->access(index);
             last = index;
