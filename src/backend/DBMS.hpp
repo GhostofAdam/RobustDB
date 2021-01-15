@@ -21,6 +21,8 @@ public:
     void addColumn(const char *table, struct column_defs *col_def);
     void dropColumn(const char *table, struct column_ref *tb_col);
     void renameColumn(const char *table, const char *old_col, const char *new_col);
+    void renameTable(const char *old_table, const char *new_table);
+    void changeColumn(const char *tb_name, const char *col, struct column_defs *col_def);
     void addPrimary(const char *table, const char *col);
     void dropPrimary(const char *table);
     void dropPrimary_byname(const char *table, const char *col);

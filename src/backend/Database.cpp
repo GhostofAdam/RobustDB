@@ -172,3 +172,11 @@ bool Database::setForeignKey(Table* tab, const char* column_name, const char* fo
     tab->addForeignKeyConstraint(t, (int) foreign_table->permID, foreign_col);
     return true;
 }
+void Database::renameTable(const char *old_table, const char *new_table){
+    for(int i=0;i<tableName.size();i++){
+        if(strcmp(tableName[i].c_str(),old_table)==0){
+            printf("--Renamed Table %s to %s\n",old_table,new_table);
+            tableName[i] = new_table;
+        }
+    }
+}

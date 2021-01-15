@@ -231,7 +231,10 @@ void execute_drop_foreign_key(const char *tb_name){
 }
 
 void execute_rename_table(const char *old_table, const char *new_table){
-    
+    printf("--Rename table\n");
+    DBMS::getInstance()->renameTable(old_table, new_table);
+    free((void *) old_table);
+    free((void *) new_table);
 }
 
 void execute_drop_foreign_key_byname(const char *tb_name, const char *key_name){
@@ -242,5 +245,8 @@ void execute_drop_foreign_key_byname(const char *tb_name, const char *key_name){
 }
 
 void execute_change_column(const char *tb_name, const char *col, struct column_defs *col_def){
-
+    printf("--Change Column\n");
+    DBMS::getInstance()->changeColumn(tb_name, col, col_def);
+    free((void *) tb_name);
+    free((void *) col);
 }

@@ -81,7 +81,6 @@ Table::~Table() {
 }
 
 void Table::create(const char* tableName) {
-    printf("head size %d\n", sizeof(head));
     assert(!this->ready);
     this->tableName = tableName;
     BufPageManager::getFileManager().createFile(tableName); // 创建table对应文件
@@ -395,7 +394,7 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
                 strcpy(head.dataArr + head.dataArrUsed, data->literal_s);
-                head.dataArrUsed += strlen(data->literal_s) + 1;
+                head.dataArrUsed += MAX_DATA_LEN + 1;
             }
             break;
         default:
@@ -463,14 +462,15 @@ bool Table::insert2Record(){
 }
     
 int Table::dropColumn(const char *name) {
-    printf("dropping column %s\n", name);
     int id = -1;
     for (int i = 0; i < head.columnTot; i++) {
         if (strcmp(head.columnName[i], name) == 0)
             id = i;
     }
-    if (id == -1)
+    if (id == -1){
+        printf("[ERROR]Drop Column Error Column does not exits\n");
         return -1;
+    }
 
     unsigned int notNull_new = 0;
     for (int i = 0; i < head.columnTot - 1; i++) {
@@ -855,6 +855,7 @@ std::string Table::checkForeignKeyConstraint() {
 }
 
 void Table::printTableDef() {
+    printf("---------------------\n");
     printf("ColumnTot %d \n", head.columnTot);
     for (int i = 0; i < head.columnTot; i++) {
         printf("%s", head.columnName[i]);
@@ -883,6 +884,7 @@ void Table::printTableDef() {
         printf("Foreigner Key %s from %d to %d.%d\n",
         head.foreignKeyList[i].name, head.foreignKeyList[i].col, head.foreignKeyList[i].foreign_table_id, head.foreignKeyList[i].foreign_col);
     }
+    printf("---------------------\n");
 }
 
 std::string Table::checkRecord() {
@@ -1017,4 +1019,85 @@ RID_t Table::selectIndexUpperBoundNull(int col) {
 RID_t Table::selectReveredIndexNext(int col) {
     assert(hasIndex(col));
     return colIndex[col].reversedNext();
+}
+
+void Table::changeColumn(const char *name, struct column_defs *col_def){
+    int8_t id = -1;
+    for (int i = 0; i < head.columnTot; i++) {
+        if (strcmp(head.columnName[i], name) == 0)
+            id = i;
+    }
+    if (id == -1){
+        printf("[ERROR]Change Column Error Column does not exits\n");
+        return;
+    }
+    auto type = (ColumnType) 0;
+    switch (col_def->type) {
+        case COLUMN_TYPE_INT:
+            type = CT_INT;
+            break;
+        case COLUMN_TYPE_VARCHAR:
+            type = CT_VARCHAR;
+            break;
+        case COLUMN_TYPE_FLOAT:
+            type = CT_FLOAT;
+            break;
+        case COLUMN_TYPE_DATE:
+            type = CT_DATE;
+            break;
+        default:
+            assert(0==1);
+            break;
+    }
+    head.columnType[id] = type;
+    strcpy(head.columnName[id], col_def->name);
+    bool isDefault = (bool) (col_def->flags->flags & COLUMN_FLAG_DEFAULT);
+    bool isNotNull= (bool) (col_def->flags->flags & COLUMN_FLAG_NOTNULL);
+    if(isNotNull){
+        head.notNull |= (1 << id);
+    }
+    else{
+        head.notNull &= ~(1 << id);
+    }
+
+    int size = 0;
+    char temp_dataArr[MAX_DATA_SIZE];
+    memcpy(temp_dataArr, head.dataArr, MAX_DATA_SIZE);
+    switch (type) {
+        case CT_INT:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[id], &(col_def->flags->default_value->literal_i), 4);
+            break;
+        case CT_FLOAT:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[id], &(col_def->flags->default_value->literal_f), 4);
+            break;
+        case CT_DATE:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[id], &(col_def->flags->default_value->literal_i), 4);
+            break;
+        case CT_VARCHAR:
+            size = MAX_DATA_LEN + 1;
+            strcpy(head.dataArr + head.columnOffset[id], col_def->flags->default_value->literal_s);
+            break;
+        default:
+            assert(0);
+    }
+    int diff = size - head.columnLen[id];
+    head.recordByte += diff;
+    head.recordByte += 4 - head.recordByte % 4;
+    head.columnOffset[id] += diff;
+    head.columnLen[id] = size;
+    if(isDefault){
+        head.defaultOffset[id] += diff;
+        head.dataArrUsed += diff;
+    }
+    
+    for(int i = id + 1;i<head.columnTot;i++){
+        head.columnOffset[i] += diff;
+        if(isDefault){
+            head.defaultOffset[i] += diff;
+            memcpy(head.dataArr+head.defaultOffset[i], temp_dataArr + head.defaultOffset[i]-diff, size);
+        }
+    }
 }

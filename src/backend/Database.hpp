@@ -27,6 +27,7 @@ public:
     int getTableId(const string &name);
     Table *getTableById(const size_t id);
     Table *getTableByName(const string &name);
+    void renameTable(const char *old_table, const char *new_table);
     bool setPrimaryKey(Table* tab, const char* columnName);
     bool setForeignKey(Table* tab, const char* columnName, const char* foreign_table_name, const char* foreign_column_name);
 private:
