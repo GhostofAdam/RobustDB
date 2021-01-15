@@ -1,6 +1,8 @@
 #ifndef __BUF_SEARCH_H__
 #define __BUF_SEARCH_H__
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "../utils/MultiList.hpp"
 #include "../utils/pagedef.hpp"
 
@@ -35,5 +37,7 @@ public:
     }
 
 };
-
+#ifdef __cplusplus
+}
+#endif
 #endif

@@ -1,13 +1,16 @@
 #ifndef __FILE_MANAGER_H__
 #define __FILE_MANAGER_H__
-
+#include <fstream>
 #include "../utils/pagedef.hpp"
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <cstdio>
 #include <cassert>
 #include <unistd.h>
 #include <fcntl.h>
 #include <map>
-#include <fstream>
+
 
 class FileManager {
     friend class BufPageManager;
@@ -55,9 +58,12 @@ public:
         off_t offset = pageID;
         offset <<= PAGE_IDX;
         //printf("write back fileId %d\n", file);
-        //printf("write data %d\n", *(int *)buf);
-        assert(lseek(file, offset, SEEK_SET) == offset);
-        assert(write(file, (void *) buf, PAGE_SIZE) == PAGE_SIZE);
+        printf("write data offset %d\n", offset);
+        const char msg[] = "Fuck writing fuck fuck\n";
+        write(STDOUT_FILENO, msg, sizeof(msg)-1);
+        
+        assert(lseek(STDOUT_FILENO , offset, SEEK_SET) == offset);
+        assert(write(STDOUT_FILENO , (void *) buf, PAGE_SIZE) == PAGE_SIZE);
     }
 
     void readPage(int fileID, int pageID, char *buf) {
@@ -109,5 +115,7 @@ public:
         return perm2temp[permID];
     }
 };
-
+#ifdef __cplusplus
+}
+#endif
 #endif

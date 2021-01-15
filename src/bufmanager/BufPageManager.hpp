@@ -1,6 +1,8 @@
 #ifndef __BUF_PAGE_MANAGER__
 #define __BUF_PAGE_MANAGER__
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "../fileio/FileManager.hpp"
 #include "FindReplace.hpp"
 #include "../utils/HashMap.hpp"
@@ -136,5 +138,7 @@ public:
         }
     }
 };
-
+#ifdef __cplusplus
+}
+#endif
 #endif
