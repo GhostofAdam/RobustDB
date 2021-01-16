@@ -78,11 +78,14 @@ Table::~Table() {
 
 void Table::create(const char* tableName) {
     this->tableName = tableName;
-    BufPageManager::getFileManager().createFile(tableName); // 创建table对应文件
-    this->fileID = BufPageManager::getFileManager().openFile(tableName);  
-    this->permID = BufPageManager::getFileManager().getFilePermID(this->fileID);
-    BufPageManager::getInstance().allocPage(this->fileID, 0); // 为文件首页获取一个缓存中的页面
-    RegisterManager::getInstance().checkIn(permID, this);
+    auto bpm = BufPageManager::getInstance();
+    auto fm = BufPageManager::getFileManager();
+    auto rm = RegisterManager::getInstance();
+    bpm.createFile(tableName); // 创建table对应文件
+    this->fileID = fm.openFile(tableName);  
+    this->permID = fm.getFilePermID(this->fileID);
+    bpm.allocPage(this->fileID, 0); // 为文件首页获取一个缓存中的页面
+    rm.checkIn(permID, this);
     this->ready = true;
     this->buf = nullptr;
     head.pageTot = 1;       // 对应文件页数
@@ -102,11 +105,14 @@ void Table::create(const char* tableName) {
 
 void Table::open(const char* tableName) {
     this->tableName = tableName;
-    this->fileID = BufPageManager::getFileManager().openFile(tableName);
-    this->permID = BufPageManager::getFileManager().getFilePermID(fileID);
-    RegisterManager::getInstance().checkIn(permID, this);
-    int index = BufPageManager::getInstance().getPage(fileID, 0);   // 为文件首页在缓存中找到对应缓存页面
-    memcpy(&(this->head), BufPageManager::getInstance().access(index), sizeof(TableHead));
+    auto bpm = BufPageManager::getInstance();
+    auto fm = BufPageManager::getFileManager();
+    auto rm = RegisterManager::getInstance();
+    this->fileID = fm.openFile(tableName);
+    this->permID = fm.getFilePermID(fileID);
+    rm.checkIn(permID, this);
+    int index = bpm.getPage(fileID, 0);   // 为文件首页在缓存中找到对应缓存页面
+    memcpy(&(this->head), bpm.access(index), sizeof(TableHead));
     this->ready = true;
     this->buf = nullptr;
     for (auto &col: this->colIndex)
@@ -116,13 +122,17 @@ void Table::open(const char* tableName) {
 
 void Table::close() {
     TableIndex::storeIndex(this);
-    int index = BufPageManager::getInstance().getPage(fileID, 0);
-    memcpy(BufPageManager::getInstance().access(index), &(this->head), sizeof(this->head));
+    auto bpm = BufPageManager::getInstance();
+    auto fm = BufPageManager::getFileManager();
+    auto rm = RegisterManager::getInstance();
 
-    BufPageManager::getInstance().markDirty(index);
-    RegisterManager::getInstance().checkOut(permID);
-    BufPageManager::getInstance().closeFile(fileID);
-    BufPageManager::getFileManager().closeFile(fileID);
+    int index = bpm.getPage(fileID, 0);
+    memcpy(bpm.access(index), &(this->head), sizeof(this->head));
+
+    bpm.markDirty(index);
+    rm.checkOut(permID);
+    bpm.closeFile(fileID);
+    fm.closeFile(fileID);
     this->ready = false;
     if (buf) {
         delete[] buf;
@@ -132,15 +142,19 @@ void Table::close() {
 
 void Table::drop() {
     TableIndex::dropIndex(this);    // 删除所有列
-    RegisterManager::getInstance().checkOut(permID);
-    BufPageManager::getInstance().closeFile(fileID, false);
-    BufPageManager::getFileManager().closeFile(fileID);
+    auto bpm = BufPageManager::getInstance();
+    auto fm = BufPageManager::getFileManager();
+    auto rm = RegisterManager::getInstance();
+    rm.checkOut(permID);
+    bpm.closeFile(fileID, false);
+    fm.closeFile(fileID);
     this->ready = false;
 }
 
 void Table::allocPage() {
-    auto index = BufPageManager::getInstance().allocPage(fileID, head.pageTot);
-    auto buf = BufPageManager::getInstance().access(index);
+    auto bpm = BufPageManager::getInstance();
+    auto index = bpm.allocPage(fileID, head.pageTot);
+    auto buf = bpm.access(index);
     auto n = (PAGE_SIZE - PAGE_FOOTER_SIZE) / head.recordByte;
     n = (n < MAX_REC_PER_PAGE) ? n : MAX_REC_PER_PAGE;
     for (int i = 0, p = 0; i < n; i++, p += head.recordByte) {
@@ -149,7 +163,7 @@ void Table::allocPage() {
         head.nextAvail = (unsigned int) head.pageTot * PAGE_SIZE + p;
     }
     memset(buf + PAGE_SIZE - PAGE_FOOTER_SIZE, 0, PAGE_FOOTER_SIZE);
-    BufPageManager::getInstance().markDirty(index);
+    bpm.markDirty(index);
     head.pageTot++;
 }
 
@@ -161,8 +175,9 @@ std::string Table::getTableName() {
 char *Table::getRecordTempPtr(RID_t rid) {
     int pageID = rid / PAGE_SIZE;
     int offset = rid % PAGE_SIZE;
-    auto index = BufPageManager::getInstance().getPage(fileID, pageID);
-    auto page = BufPageManager::getInstance().access(index);
+    auto bpm = BufPageManager::getInstance();
+    auto index = bpm.getPage(fileID, pageID);
+    auto page = bpm.access(index);
     return page + offset;
 }
 
@@ -658,11 +673,19 @@ void Table::clearBuffer() {
 void Table::resetBuffer(){
     unsigned int &notNull = *(unsigned int *) buf;
     notNull = 0;
+    if (buf == nullptr) {
+        buf = new char[head.recordByte];
+        resetBuffer();
+    }
     for (int i = 0; i < head.columnTot; i++) {
         if (head.defaultOffset[i] != -1) {
             switch (head.columnType[i]) {
                 case CT_INT:
+                    memcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i], 4);
+                    break;
                 case CT_FLOAT:
+                    memcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i], 4);
+                    break;
                 case CT_DATE:
                     memcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i], 4);
                     break;
@@ -680,16 +703,20 @@ void Table::printTableDef() {
         printf("%s", head.columnName[i]);
         switch (head.columnType[i]) {
             case CT_INT:
-                printf(" INT(%d)", head.columnLen[i]);
+                printf(" ");
+                printf("INT(%d)", head.columnLen[i]);
                 break;
             case CT_FLOAT:
-                printf(" FLOAT");
+                printf(" ");
+                printf("FLOAT");
                 break;
             case CT_DATE:
-                printf(" DATE");
+                printf(" ");
+                printf("DATE");
                 break;
             case CT_VARCHAR:
-                printf(" VARCHAR(%d)", head.columnLen[i]);
+                printf(" ");
+                printf("VARCHAR(%d)", head.columnLen[i]);
                 break;
             default:
                 break;
@@ -707,6 +734,10 @@ void Table::printTableDef() {
 }
 
 std::string Table::checkRecord() {
+    if (buf == nullptr) {
+        buf = new char[head.recordByte];
+        resetBuffer();
+    }
     unsigned int &notNull = *(unsigned int *) buf;
     if ((notNull & head.notNull) != head.notNull) {
         return "[ERROR]Insert Error Get Null in not Null Column\n";
@@ -807,6 +838,10 @@ void Table::changeColumn(const char *name, struct column_defs *col_def){
 
 
 std::string Table::checkForeignKeyConstraint(){
+    if (buf == nullptr) {
+        buf = new char[head.recordByte];
+        resetBuffer();
+    }
     for (int i = 0; i < this->head.foreignKeyTot; ++i) {
         auto check = this->head.foreignKeyList[i];
         auto localData = (this->buf + this->head.columnOffset[check.col]);
