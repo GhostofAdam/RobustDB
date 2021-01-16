@@ -1,8 +1,8 @@
 
-#include "CRUD.hpp"
 #include "PrimaryKey.hpp"
 #include "ForeignerKey.hpp"
 #include "TableIndex.hpp"
+#include "Record.hpp"
 #include "../dbms/DBMS.hpp"
 class DBMS;
 bool operator<(const IndexKey &a, IndexKey &b) {
@@ -557,69 +557,6 @@ std::string Table::checkRecord() {
         }
     }
     return std::string();
-}
-
-std::string Table::loadRecordToTemp(RID_t rid, char *page, int offset) {
-    UNUSED(rid);
-    if (buf == nullptr) {
-        buf = new char[head.recordByte];
-    }
-    char *record = page + offset;
-    if (!getFooter(page, offset / head.recordByte)) {
-        return "ERROR: RID invalid";
-    }
-    memcpy(buf, record, (size_t) head.recordByte);
-    return "";
-}
-
-std::string Table::modifyRecordNull(RID_t rid, int col) {
-    int pageID = rid / PAGE_SIZE;
-    int offset = rid % PAGE_SIZE;
-    int index = BufPageManager::getInstance().getPage(fileID, pageID);
-    char *page = (char*)BufPageManager::getInstance().access(index);
-    char *record = page + offset;
-    std::string err = loadRecordToTemp(rid, page, offset);
-    if (!err.empty()) {
-        return err;
-    }
-    insert2Buffer(col);
-    err = checkRecord();
-    if (!err.empty()) {
-        return err;
-    }
-    TableIndex::eraseColIndex(this, rid, col);
-    memcpy(record, buf, head.recordByte);
-    BufPageManager::getInstance().markDirty(index);
-    TableIndex::insertColIndex(this, rid, col);
-    return "";
-}
-
-std::string Table::modifyRecord(RID_t rid, int col, char *data) {
-    if (data == nullptr) {
-        return modifyRecordNull(rid, col);
-    }
-    int pageID = rid / PAGE_SIZE;
-    int offset = rid % PAGE_SIZE;
-    int index = BufPageManager::getInstance().getPage(fileID, pageID);
-    char *page = BufPageManager::getInstance().access(index);
-    char *record = page + offset;
-    std::string err = loadRecordToTemp(rid, page, offset);
-    if (!err.empty()) {
-        return err;
-    }
-    err = insert2Buffer(col, data);
-    if (!err.empty()) {
-        return err;
-    }
-    err = checkRecord();
-    if (!err.empty()) {
-        return err;
-    }
-    TableIndex::eraseColIndex(this, rid, col);
-    memcpy(record, buf, head.recordByte);
-    BufPageManager::getInstance().markDirty(index);
-    TableIndex::insertColIndex(this, rid, col);
-    return "";
 }
 
 void Table::changeColumn(const char *name, struct column_defs *col_def){

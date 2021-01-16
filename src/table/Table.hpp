@@ -41,6 +41,7 @@ class Table{
     friend class ForeignerKey;
     friend class PrimaryKey;
     friend class TableIndex;
+    friend class Record;
 private:
     TableHead head;
     
@@ -84,10 +85,6 @@ public:
     void changeColumn(const char *col, struct column_defs *col_def);
 
     std::string checkRecord();
-    std::string loadRecordToTemp(RID_t rid, char *page, int offset);
-    std::string modifyRecordNull(RID_t rid, int col);
-    std::string modifyRecord(RID_t rid, int col, char *data);
-    
     std::string checkForeignKeyConstraint();
     string tableName;
 

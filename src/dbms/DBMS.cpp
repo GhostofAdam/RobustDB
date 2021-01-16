@@ -568,7 +568,7 @@ void DBMS::updateRow(const char *table, condition_tree *condition, column_ref *c
     auto resutls = selectRidfromTable(tb, condition);
     for(auto rid: resutls){
         //TODO
-        std::string ret = tb->modifyRecord(rid, col_to_update,
+        std::string ret = Record::modifyRecord(tb, rid, col_to_update,
                                                ExprTypeToDbType(eval, ColumnTypeToExprType(colType)));
     }
     

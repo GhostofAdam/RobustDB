@@ -1,10 +1,10 @@
 #ifndef __DATABASE_HPP__
 #define __DATABASE_HPP__
 #include "../table/Table.hpp"
-#include "../table/CRUD.hpp"
 #include "../table/ForeignerKey.hpp"
 #include "../table/PrimaryKey.hpp"
 #include "../table/TableIndex.hpp"
+#include "../table/Record.hpp"
 
 enum {
     EXCEPTION_NONE,
