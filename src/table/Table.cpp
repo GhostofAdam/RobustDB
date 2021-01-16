@@ -80,15 +80,12 @@ Table::~Table() {
 }
 
 void Table::create(const char* tableName) {
-    this->tableName = tableName;
-    auto bpm = BufPageManager::getInstance();
-    auto fm = BufPageManager::getFileManager();
-    auto rm = RegisterManager::getInstance();
-    bpm.createFile(tableName); // 创建table对应文件
-    this->fileID = fm.openFile(tableName);  
-    this->permID = fm.getFilePermID(this->fileID);
-    bpm.allocPage(this->fileID, 0); // 为文件首页获取一个缓存中的页面
-    rm.checkIn(permID, this);
+    this->tableName = std::string(tableName);
+    BufPageManager::getFileManager().createFile(tableName);
+    fileID = BufPageManager::getFileManager().openFile(tableName);
+    permID = BufPageManager::getFileManager().getFilePermID(fileID);
+    BufPageManager::getInstance().allocPage(fileID, 0);
+    RegisterManager::getInstance().checkIn(permID, this);
     this->ready = true;
     this->buf = nullptr;
     head.pageTot = 1;       // 对应文件页数
@@ -107,36 +104,30 @@ void Table::create(const char* tableName) {
 }
 
 void Table::open(const char* tableName) {
-    this->tableName = tableName;
-    auto bpm = BufPageManager::getInstance();
-    auto fm = BufPageManager::getFileManager();
-    auto rm = RegisterManager::getInstance();
-    this->fileID = fm.openFile(tableName);
-    this->permID = fm.getFilePermID(fileID);
-    rm.checkIn(permID, this);
-    int index = bpm.getPage(fileID, 0);   // 为文件首页在缓存中找到对应缓存页面
-    memcpy(&(this->head), bpm.access(index), sizeof(TableHead));
-    this->ready = true;
-    this->buf = nullptr;
-    for (auto &col: this->colIndex)
+    assert(ready == 0);
+    this->tableName = std::string(tableName);
+    fileID = BufPageManager::getFileManager().openFile(tableName);
+    permID = BufPageManager::getFileManager().getFilePermID(fileID);
+    RegisterManager::getInstance().checkIn(permID, this);
+    int index = BufPageManager::getInstance().getPage(fileID, 0);
+    memcpy(&head, BufPageManager::getInstance().access(index), sizeof(TableHead));
+    ready = true;
+    buf = nullptr;
+    for (auto &col: colIndex) {
         col.clear();
+    }
     TableIndex::loadIndex(this);    // 加载各列信息
 }
 
 void Table::close() {
     TableIndex::storeIndex(this);
-    auto bpm = BufPageManager::getInstance();
-    auto fm = BufPageManager::getFileManager();
-    auto rm = RegisterManager::getInstance();
-
-    int index = bpm.getPage(fileID, 0);
-    memcpy(bpm.access(index), &(this->head), sizeof(this->head));
-
-    bpm.markDirty(index);
-    rm.checkOut(permID);
-    bpm.closeFile(fileID);
-    fm.closeFile(fileID);
-    this->ready = false;
+    int index = BufPageManager::getInstance().getPage(fileID, 0);
+    memcpy(BufPageManager::getInstance().access(index), &head, sizeof(TableHead));
+    BufPageManager::getInstance().markDirty(index);
+    RegisterManager::getInstance().checkOut(permID);
+    BufPageManager::getInstance().closeFile(fileID);
+    BufPageManager::getFileManager().closeFile(fileID);
+    ready = false;
     if (buf) {
         delete[] buf;
         buf = 0;
@@ -145,19 +136,15 @@ void Table::close() {
 
 void Table::drop() {
     TableIndex::dropIndex(this);    // 删除所有列
-    auto bpm = BufPageManager::getInstance();
-    auto fm = BufPageManager::getFileManager();
-    auto rm = RegisterManager::getInstance();
-    rm.checkOut(permID);
-    bpm.closeFile(fileID, false);
-    fm.closeFile(fileID);
-    this->ready = false;
+   RegisterManager::getInstance().checkOut(permID);
+    BufPageManager::getInstance().closeFile(fileID, false);
+    BufPageManager::getFileManager().closeFile(fileID);
+    ready = false;
 }
 
 void Table::allocPage() {
-    auto bpm = BufPageManager::getInstance();
-    auto index = bpm.allocPage(fileID, head.pageTot);
-    auto buf = bpm.access(index);
+    auto index = BufPageManager::getInstance().allocPage(fileID, head.pageTot);
+    auto buf = BufPageManager::getInstance().access(index);
     auto n = (PAGE_SIZE - PAGE_FOOTER_SIZE) / head.recordByte;
     n = (n < MAX_REC_PER_PAGE) ? n : MAX_REC_PER_PAGE;
     for (int i = 0, p = 0; i < n; i++, p += head.recordByte) {
@@ -166,7 +153,7 @@ void Table::allocPage() {
         head.nextAvail = (unsigned int) head.pageTot * PAGE_SIZE + p;
     }
     memset(buf + PAGE_SIZE - PAGE_FOOTER_SIZE, 0, PAGE_FOOTER_SIZE);
-    bpm.markDirty(index);
+    BufPageManager::getInstance().markDirty(index);
     head.pageTot++;
 }
 
@@ -178,9 +165,10 @@ std::string Table::getTableName() {
 char *Table::getRecordTempPtr(RID_t rid) {
     int pageID = rid / PAGE_SIZE;
     int offset = rid % PAGE_SIZE;
-    auto bpm = BufPageManager::getInstance();
-    auto index = bpm.getPage(fileID, pageID);
-    auto page = bpm.access(index);
+    assert(1 <= pageID && pageID < head.pageTot);
+    auto index = BufPageManager::getInstance().getPage(fileID, pageID);
+    auto page = BufPageManager::getInstance().access(index);
+    assert(getFooter(page, offset / head.recordByte));
     return page + offset;
 }
 
