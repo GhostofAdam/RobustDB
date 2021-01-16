@@ -1,6 +1,6 @@
 #include "common.hpp"
 #include "../stx/btree_set.hpp"
-#include "RegisterManager.hpp"
+#include "../backend/RegisterManager.hpp"
 
 class IndexKey {
     int rid;    // record id

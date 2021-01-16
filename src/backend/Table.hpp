@@ -1,5 +1,5 @@
 #include "common.hpp"
-#include "Index.hpp"
+#include "../index/Index.hpp"
 #include "Compare.hpp"
 #include "../bufmanager/BufPageManager.hpp"
 #include "../parser/type_def.hpp"
