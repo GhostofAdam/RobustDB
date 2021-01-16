@@ -35,6 +35,12 @@ public:
     void dropIndex(index_argu *tb_col);
     void descTable(const char *name);
     bool valueExistInTable(const char* value, const ForeignKey& key);
+    ListNode* mergeTable(ListNode* head1, ListNode* head2);
+    void binaryTableMerge(vector<ListNode*>& lists);
+    ListNode* mergeTableLists(vector<ListNode*>& lists);
+    ListNode* visitTableLists(vector<ListNode*>& lists);
+    void RecordCount(index_argu *idx_stmt, string s, vector<string>& words);
+
 private:
         enum IDX_TYPE {
         IDX_NONE, IDX_LOWWER, IDX_UPPER, IDX_EQUAL
@@ -52,10 +58,6 @@ private:
     void freeCachedColumns();
     IDX_TYPE checkIndexAvailability(Table *tb, RID_t *rid_l, RID_t *rid_u, int *col, condition_tree *condition);
     RID_t nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t rid_u);
-    using CallbackFunc = std::function<void(Table *, RID_t)>;
-    bool iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, CallbackFunc callback);
-    void iterateRecords(linked_list *tables, expr_node *condition, CallbackFunc callback);
-    void iterateRecords(Table *tb, expr_node *condition, CallbackFunc callback);
     void freeLinkedList(linked_list *t);
     std::vector<RID_t> selectRidfromTable(Table* openedTables, condition_tree *condition);
     bool checkCondition(RID_t rid, condition_tree *condition);

@@ -119,9 +119,6 @@ void DBMS::freeCachedColumns() {
 }
 
 
-
-
-
 void DBMS::freeLinkedList(linked_list *t) {
     linked_list *next;
     for (; t; t = next) {
@@ -836,6 +833,156 @@ void DBMS::createIndex(index_argu *idx_stmt) {
         }
     }
 }
+void DBMS::RecordCount(index_argu *idx_stmt, string s, vector<string>& words){
+    Table *tb;
+    linked_list* column_list = idx_stmt->columns;
+    for (; column_list; column_list = column_list->next) {
+        if (s == "" || words.size() == 0) return {};
+        unordered_map<string, int>hash;
+        vector<int>ans; ans.clear();
+        int modelen = words[0].length(), len = s.length();
+        for (auto s: words) hash[s] ++;
+        auto tmp = hash;
+        string buff = "";
+        for (int i = 0; i < len; i ++) {
+            if (len - i + 1 < modelen * words.size()) break;
+            tmp = hash;
+            buff = s.substr(i, modelen);
+            int j = i, count = 0;
+            while (tmp[buff] > 0) {
+                    -- tmp[buff];
+                    count ++;
+                    j += modelen;
+                    buff = s.substr(j, modelen);
+                    auto type = (ColumnType) 0;
+                switch (type) {
+                case CT_INT:
+                    size = 4;
+                    visitLists(lists);
+                    break;
+                case CT_FLOAT:
+                    size = 4;
+                    visitLists(lists);
+                    break;
+                case CT_DATE:
+                    size = 4;
+                    visitLists(lists);
+                    break;
+                case CT_VARCHAR:
+                    size = MAX_DATA_LEN + 1;
+                    visitLists(lists);
+                    break;
+                default:
+                    break;
+                }
+            if (count == words.size()) {
+                ans.push_back(i);
+            }
+        }
+        return ans;
+        }
+    }
+}
+ListNode* DBMS::visitTableLists(vector<ListNode*>& lists){
+    const int size = lists.size();
+
+    for (int col = 0; col < size; col+=2) {
+        if (col+1 >= size) {
+            lists[col/2] = lists[col];
+            auto check = this->head.foreignKeyList[col];
+            auto localData = (this->buf + this->head.columnOffset[check.col]);
+            auto dbms = DBMS::getInstance();
+            int size = this->head.columnOffset[check.col]
+            int diff = size - head.columnLen[col];
+            head.recordByte += diff;
+            head.recordByte += 4 - head.recordByte % 4;
+            head.columnOffset[col] += diff;
+            head.columnLen[col] = size;
+        }
+        lists[col/2] = merge(lists[col], lists[col+1]);
+    }
+
+    int col = size / 2;
+    while (col--) {
+        lists.pop_back();
+        auto check = this->head.foreignKeyList[col];
+        auto localData = (this->buf + this->head.columnOffset[check.col]);
+        auto dbms = DBMS::getInstance();
+        int size = this->head.columnOffset[check.col]
+        int diff = size - head.columnLen[col];
+        head.recordByte += diff;
+        head.recordByte += 4 - head.recordByte % 4;
+        head.columnOffset[col] += diff;
+        head.columnLen[col] = size;
+
+    }
+}
+ListNode* DBMS::mergeTableLists(vector<ListNode*>& lists) {
+    if (lists.empty()) return nullptr;
+
+    while (lists.size() != 1) {
+        binaryMerge(lists);
+        auto type = (ColumnType) 0;
+        switch (type) {
+        case CT_INT:
+            size = 4;
+            visitLists(lists);
+            break;
+        case CT_FLOAT:
+            size = 4;
+            visitLists(lists);
+            break;
+        case CT_DATE:
+            size = 4;
+            visitLists(lists);
+            break;
+        case CT_VARCHAR:
+            size = MAX_DATA_LEN + 1;
+            visitLists(lists);
+            break;
+        default:
+            break;
+    }
+    }
+
+    return lists[0];
+}
+
+void DBMS::binaryTableMerge(vector<ListNode*>& lists) {
+    const int size = lists.size();
+
+    for (int i = 0; i < size; i+=2) {
+        if (i+1 >= size) {
+            lists[i/2] = lists[i];
+            break;
+        }
+        lists[i/2] = merge(lists[i], lists[i+1]);
+    }
+
+    int count = size / 2;
+    while (count--) {
+        lists.pop_back();
+    }
+}
+ListNode* DBMS::mergeTable(ListNode* head1, ListNode* head2) {
+    ListNode mergeHead;
+    ListNode* mergePtr  = &mergeHead;
+    while (head1 && head2) {
+        if (head1->val < head2->val) {
+            mergePtr->next = head1;
+            head1 = head1->next;
+        }
+        else {
+            mergePtr->next = head2;
+            head2 = head2->next;
+        }
+        mergePtr = mergePtr->next;
+    }
+    if (head1) mergePtr->next = head1;
+    else       mergePtr->next = head2;
+    return mergeHead.next;
+}
+
 
 void DBMS::dropIndex(index_argu *idx_stmt) {
     Table *tb;

@@ -6,7 +6,6 @@
 #include "../dbms/DBMS.hpp"
 class DBMS;
 bool operator<(const IndexKey &a, IndexKey &b) {
-    
     if (a.getIsNull()) {
         if (b.getIsNull())  
             return a.getRid() < b.getRid();
@@ -23,7 +22,6 @@ bool operator<(const IndexKey &a, const IndexKey &b) {
 
     Table *tab = RegisterManager::getInstance().getPtr(a.permID);
     ColumnType tp = tab->getColumnType(a.col);
-
     //compare null
     if (a.isNull) {
         if (b.isNull) return a.rid < b.rid;
@@ -31,7 +29,6 @@ bool operator<(const IndexKey &a, const IndexKey &b) {
     } else {
         if (b.isNull) return false;
     }
-
     //fast compare
     int tmp;
     switch (tp) {
@@ -461,6 +458,173 @@ int Table::dropColumn(const char *name) {
     printf("--Dropped column %s\n", name);
     return id;
 }
+int checkColumn(const char *name){
+    if(name!)
+        return -1;
+    int id = -1;
+    for (int i = 0; i < head.columnTot; i++) {
+        if (strcmp(head.columnName[i], name) == 0)
+            id = i;
+    }
+    if (id == -1){
+        printf("[ERROR]Drop Column Error Column does not exits\n");
+        return -1;
+    }
+
+    unsigned int notNull_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.notNull >> i) & 0x1)
+                notNull_new |= (1 << i);
+        }
+        else {
+            if ((head.notNull >> (i + 1)) & 0x1)
+                notNull_new |= (1 << i);
+        }
+    }
+    head.notNull = notNull_new;
+
+    unsigned int hasIndex_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.hasIndex >> i) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+        else {
+            if ((head.hasIndex >> (i + 1)) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+    }
+    head.hasIndex = hasIndex_new;
+
+    if ((head.isPrimary >> id) & 0x1) {
+        head.primaryCount--;
+    }
+    unsigned int isPrimary_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.isPrimary >> i) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+        else {
+            if ((head.isPrimary >> (i + 1)) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+    }
+    head.isPrimary = isPrimary_new;
+
+    int8_t fkt = head.foreignKeyTot;
+    bool fk_flag[fkt];
+    for (int8_t i = 0; i < fkt; i++) {
+        if (head.foreignKeyList[i].col == id)
+            fk_flag[i] = false;
+        else
+            fk_flag[i] = true;
+    }
+    head.foreignKeyTot = 0;
+    for (int8_t i = 0; i < fkt; i++) {
+        if (fk_flag[i]) {
+            head.foreignKeyList[head.foreignKeyTot] = head.foreignKeyList[i];
+            head.foreignKeyTot++;
+        }
+    }
+
+    for (int i = id; i < head.columnTot - 1; i++) {
+        strcpy(head.columnName[i], head.columnName[i + 1]);
+        head.columnOffset[i] = head.columnOffset[i + 1];
+        head.columnType[i] = head.columnType[i + 1];
+        head.columnLen[i] = head.columnLen[i + 1];
+        head.defaultOffset[i] = head.defaultOffset[i + 1];
+        strcpy(head.pkName[i], head.pkName[i + 1]);
+    }
+    head.columnTot--;
+    printf("--Dropped column %s\n", name);
+    return id;
+}
+int Table::dropColumnifNull(const char *name) {
+    if(name!)
+        return -1;
+    int id = -1;
+    for (int i = 0; i < head.columnTot; i++) {
+        if (strcmp(head.columnName[i], name) == 0)
+            id = i;
+    }
+    if (id == -1){
+        printf("[ERROR]Drop Column Error Column does not exits\n");
+        return -1;
+    }
+
+    unsigned int notNull_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.notNull >> i) & 0x1)
+                notNull_new |= (1 << i);
+        }
+        else {
+            if ((head.notNull >> (i + 1)) & 0x1)
+                notNull_new |= (1 << i);
+        }
+    }
+    head.notNull = notNull_new;
+
+    unsigned int hasIndex_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.hasIndex >> i) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+        else {
+            if ((head.hasIndex >> (i + 1)) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+    }
+    head.hasIndex = hasIndex_new;
+
+    if ((head.isPrimary >> id) & 0x1) {
+        head.primaryCount--;
+    }
+    unsigned int isPrimary_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.isPrimary >> i) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+        else {
+            if ((head.isPrimary >> (i + 1)) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+    }
+    head.isPrimary = isPrimary_new;
+
+    int8_t fkt = head.foreignKeyTot;
+    bool fk_flag[fkt];
+    for (int8_t i = 0; i < fkt; i++) {
+        if (head.foreignKeyList[i].col == id)
+            fk_flag[i] = false;
+        else
+            fk_flag[i] = true;
+    }
+    head.foreignKeyTot = 0;
+    for (int8_t i = 0; i < fkt; i++) {
+        if (fk_flag[i]) {
+            head.foreignKeyList[head.foreignKeyTot] = head.foreignKeyList[i];
+            head.foreignKeyTot++;
+        }
+    }
+
+    for (int i = id; i < head.columnTot - 1; i++) {
+        strcpy(head.columnName[i], head.columnName[i + 1]);
+        head.columnOffset[i] = head.columnOffset[i + 1];
+        head.columnType[i] = head.columnType[i + 1];
+        head.columnLen[i] = head.columnLen[i + 1];
+        head.defaultOffset[i] = head.defaultOffset[i + 1];
+        strcpy(head.pkName[i], head.pkName[i + 1]);
+    }
+    head.columnTot--;
+    printf("--Dropped column %s\n", name);
+    return id;
+}
+
 
 int Table::renameColumn(const char *old_col, const char *new_col) {
     for (int i = 0; i < head.columnTot; i++) {
@@ -658,6 +822,9 @@ void Table::changeColumn(const char *name, struct column_defs *col_def){
     }
 }
 
+
+
+
 std::string Table::checkForeignKeyConstraint(){
     if (buf == nullptr) {
         buf = new char[head.recordByte];
@@ -673,4 +840,292 @@ std::string Table::checkForeignKeyConstraint(){
         }
     }
     return std::string();
+}
+
+void Table::checkConstraint(){
+    int size = 0, col = 0;
+    char temp_dataArr[MAX_DATA_SIZE];
+    memcpy(temp_dataArr, head.dataArr, MAX_DATA_SIZE);
+    switch (type) {
+        case CT_INT:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[col], &(col_def->flags->default_value->literal_i), 4);
+            break;
+        case CT_FLOAT:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[col], &(col_def->flags->default_value->literal_f), 4);
+            break;
+        case CT_DATE:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[col], &(col_def->flags->default_value->literal_i), 4);
+            break;
+        case CT_VARCHAR:
+            size = MAX_DATA_LEN + 1;
+            strcpy(head.dataArr + head.columnOffset[col], col_def->flags->default_value->literal_s);
+            break;
+        default:
+            break;
+    }
+    auto check = this->head.foreignKeyList[col];
+    auto localData = (this->buf + this->head.columnOffset[check.col]);
+    auto dbms = DBMS::getInstance();
+    int size = this->head.columnOffset[check.col]
+    int diff = size - head.columnLen[col];
+    head.recordByte += diff;
+    head.recordByte += 4 - head.recordByte % 4;
+    head.columnOffset[col] += diff;
+    head.columnLen[col] = size;
+
+    char temp_dataArr[MAX_DATA_SIZE];
+    memcpy(temp_dataArr, head.dataArr, MAX_DATA_SIZE);
+    switch (type) {
+        case CT_INT:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[col], &(col_def->flags->default_value->literal_i), 4);
+            break;
+        case CT_FLOAT:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[col], &(col_def->flags->default_value->literal_f), 4);
+            break;
+        case CT_DATE:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[col], &(col_def->flags->default_value->literal_i), 4);
+            break;
+        case CT_VARCHAR:
+            size = MAX_DATA_LEN + 1;
+            strcpy(head.dataArr + head.columnOffset[col], col_def->flags->default_value->literal_s);
+            break;
+        default:
+            break;
+    }
+    auto check = this->head.foreignKeyList[col];
+    auto localData = (this->buf + this->head.columnOffset[check.col]);
+    auto dbms = DBMS::getInstance();
+    int size = this->head.columnOffset[check.col]
+    int diff = size - head.columnLen[col];
+    head.recordByte += diff;
+    head.recordByte += 4 - head.recordByte % 4;
+    head.columnOffset[col] += diff;
+    head.columnLen[col] = size;
+}
+
+void Table::insertRecord2Buf(RID_t rid){
+    auto type = (ColumnType) 0;
+    switch (type) {
+        case CT_INT:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[id], &(col_def->flags->default_value->literal_i), 4);
+            break;
+        case CT_FLOAT:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[id], &(col_def->flags->default_value->literal_f), 4);
+            break;
+        case CT_DATE:
+            size = 4;
+            memcpy(head.dataArr + head.columnOffset[id], &(col_def->flags->default_value->literal_i), 4);
+            break;
+        case CT_VARCHAR:
+            size = MAX_DATA_LEN + 1;
+            strcpy(head.dataArr + head.columnOffset[id], col_def->flags->default_value->literal_s);
+            break;
+        default:
+            break;
+    }
+}
+ListNode* Table::visitLists(vector<ListNode*>& lists){
+    const int size = lists.size();
+
+    for (int col = 0; col < size; col+=2) {
+        if (col+1 >= size) {
+            lists[col/2] = lists[col];
+            auto check = this->head.foreignKeyList[col];
+            auto localData = (this->buf + this->head.columnOffset[check.col]);
+            auto dbms = DBMS::getInstance();
+            int size = this->head.columnOffset[check.col]
+            int diff = size - head.columnLen[col];
+            head.recordByte += diff;
+            head.recordByte += 4 - head.recordByte % 4;
+            head.columnOffset[col] += diff;
+            head.columnLen[col] = size;
+        }
+        lists[col/2] = merge(lists[col], lists[col+1]);
+    }
+
+    int col = size / 2;
+    while (col--) {
+        lists.pop_back();
+        auto check = this->head.foreignKeyList[col];
+        auto localData = (this->buf + this->head.columnOffset[check.col]);
+        auto dbms = DBMS::getInstance();
+        int size = this->head.columnOffset[check.col]
+        int diff = size - head.columnLen[col];
+        head.recordByte += diff;
+        head.recordByte += 4 - head.recordByte % 4;
+        head.columnOffset[col] += diff;
+        head.columnLen[col] = size;
+
+    }
+}
+ListNode* Table::mergeKLists(vector<ListNode*>& lists) {
+    if (lists.empty()) return nullptr;
+
+    while (lists.size() != 1) {
+        binaryMerge(lists);
+        auto type = (ColumnType) 0;
+        switch (type) {
+        case CT_INT:
+            size = 4;
+            visitLists(lists);
+            break;
+        case CT_FLOAT:
+            size = 4;
+            visitLists(lists);
+            break;
+        case CT_DATE:
+            size = 4;
+            visitLists(lists);
+            break;
+        case CT_VARCHAR:
+            size = MAX_DATA_LEN + 1;
+            visitLists(lists);
+            break;
+        default:
+            break;
+    }
+    }
+
+    return lists[0];
+}
+
+void Table::binaryMerge(vector<ListNode*>& lists) {
+    const int size = lists.size();
+
+    for (int i = 0; i < size; i+=2) {
+        if (i+1 >= size) {
+            lists[i/2] = lists[i];
+            break;
+        }
+        lists[i/2] = merge(lists[i], lists[i+1]);
+    }
+
+    int count = size / 2;
+    while (count--) {
+        lists.pop_back();
+    }
+}
+ListNode* Table::merge(ListNode* head1, ListNode* head2) {
+    ListNode mergeHead;
+    ListNode* mergePtr  = &mergeHead;
+    while (head1 && head2) {
+        if (head1->val < head2->val) {
+            mergePtr->next = head1;
+            head1 = head1->next;
+        }
+        else {
+            mergePtr->next = head2;
+            head2 = head2->next;
+        }
+        mergePtr = mergePtr->next;
+    }
+    if (head1) mergePtr->next = head1;
+    else       mergePtr->next = head2;
+    return mergeHead.next;
+}
+
+vector<int> Table::findSubstring(string s, vector<string>& words) {
+    if (s == "" || words.size() == 0) return {};
+    unordered_map<string, int>hash;
+    vector<int>ans; ans.clear();
+    int modelen = words[0].length(), len = s.length();
+    for (auto s: words) hash[s] ++;
+    auto tmp = hash;
+    string buff = "";
+    for (int i = 0; i < len; i ++) {
+        if (len - i + 1 < modelen * words.size()) break;
+        tmp = hash;
+        buff = s.substr(i, modelen);
+        int j = i, count = 0;
+        while (tmp[buff] > 0) {
+                -- tmp[buff];
+                count ++;
+                j += modelen;
+                buff = s.substr(j, modelen);
+                 auto type = (ColumnType) 0;
+            switch (type) {
+            case CT_INT:
+                size = 4;
+                visitLists(lists);
+                break;
+            case CT_FLOAT:
+                size = 4;
+                visitLists(lists);
+                break;
+            case CT_DATE:
+                size = 4;
+                visitLists(lists);
+                break;
+            case CT_VARCHAR:
+                size = MAX_DATA_LEN + 1;
+                visitLists(lists);
+                break;
+            default:
+                break;
+            }
+        if (count == words.size()) {
+            ans.push_back(i);
+        }
+    }
+    return ans;
+    }
+}
+
+string Table::multiply(string num1, string num2) {
+    if (num1 == "0" || num2 == "0") {
+        return "0";
+    }
+    string ans = "0";
+    int m = num1.size(), n = num2.size();
+    for (int i = n - 1; i >= 0; i--) {
+        string curr;
+        int add = 0;
+        for (int j = n - 1; j > i; j--) {
+            curr.push_back(0);
+        }
+        int y = num2.at(i) - '0';
+        for (int j = m - 1; j >= 0; j--) {
+            int x = num1.at(j) - '0';
+            int product = x * y + add;
+            curr.push_back(product % 10);
+            add = product / 10;
+        }
+        while (add != 0) {
+            curr.push_back(add % 10);
+            add /= 10;
+        }
+        reverse(curr.begin(), curr.end());
+        for (auto &c : curr) {
+            c += '0';
+        }
+        ans = addStrings(ans, curr);
+    }
+    return ans;
+}
+
+string Table::addStrings(string &num1, string &num2) {
+    int i = num1.size() - 1, j = num2.size() - 1, add = 0;
+    string ans;
+    while (i >= 0 || j >= 0 || add != 0) {
+        int x = i >= 0 ? num1.at(i) - '0' : 0;
+        int y = j >= 0 ? num2.at(j) - '0' : 0;
+        int result = x + y + add;
+        ans.push_back(result % 10);
+        add = result / 10;
+        i--;
+        j--;
+    }
+    reverse(ans.begin(), ans.end());
+    for (auto &c: ans) {
+        c += '0';
+    }
+    return ans;
 }
