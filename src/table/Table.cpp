@@ -1,11 +1,10 @@
 
+#include "CRUD.hpp"
+#include "PrimaryKey.hpp"
+#include "ForeignerKey.hpp"
 #include "../dbms/DBMS.hpp"
 class DBMS;
-
-
 bool operator<(const IndexKey &a, IndexKey &b) {
-    assert(a.getPermID() == b.getPermID());
-    assert(a.getCol() == b.getCol());
     
     if (a.getIsNull()) {
         if (b.getIsNull())  
@@ -20,8 +19,7 @@ bool operator<(const IndexKey &a, IndexKey &b) {
 }
 
 bool operator<(const IndexKey &a, const IndexKey &b) {
-    assert(a.permID == b.permID);
-    assert(a.col == b.col);
+
     Table *tab = RegisterManager::getInstance().getPtr(a.permID);
     ColumnType tp = tab->getColumnType(a.col);
 
@@ -49,7 +47,7 @@ bool operator<(const IndexKey &a, const IndexKey &b) {
             if (tmp == 1) return false;
             break;
         default:
-            assert(0);
+            break;
     }
 
     char *x = tab->select(a.rid, a.col);
@@ -62,7 +60,7 @@ bool operator<(const IndexKey &a, const IndexKey &b) {
         case CT_FLOAT:
             res = Compare::compareFloatSgn(*(float *) x, *(float *) y);
         default:
-            assert(0);
+            break;
     }
     delete[] x;
     delete[] y;
@@ -81,7 +79,6 @@ Table::~Table() {
 }
 
 void Table::create(const char* tableName) {
-    assert(!this->ready);
     this->tableName = tableName;
     BufPageManager::getFileManager().createFile(tableName); // 创建table对应文件
     this->fileID = BufPageManager::getFileManager().openFile(tableName);  
@@ -99,14 +96,13 @@ void Table::create(const char* tableName) {
     head.foreignKeyTot = 0; // 外键数量
     head.primaryCount = 0;  // 主键数量
     addColumn("RID", (ColumnType)CT_INT, true, false, nullptr);
-    setPrimary(0);
+    PrimaryKey::setPrimary(this,0);
     for (auto &col: colIndex) {
         col.clear();
     }
 }
 
 void Table::open(const char* tableName) {
-    assert(!this->ready);
     this->tableName = tableName;
     this->fileID = BufPageManager::getFileManager().openFile(tableName);
     this->permID = BufPageManager::getFileManager().getFilePermID(fileID);
@@ -121,7 +117,6 @@ void Table::open(const char* tableName) {
 }
 
 void Table::close() {
-    assert(this->ready);
     storeIndex();
     int index = BufPageManager::getInstance().getPage(fileID, 0);
     memcpy(BufPageManager::getInstance().access(index), &(this->head), sizeof(this->head));
@@ -138,7 +133,6 @@ void Table::close() {
 }
 
 void Table::drop() {
-    assert(this->ready);
     dropIndex();    // 删除所有列
     RegisterManager::getInstance().checkOut(permID);
     BufPageManager::getInstance().closeFile(fileID, false);
@@ -207,17 +201,14 @@ RID_t Table::getNext(RID_t rid) {
 }
 
 std::string Table::getTableName() {
-    assert(ready);
     return tableName;
 }
 
 char *Table::getRecordTempPtr(RID_t rid) {
     int pageID = rid / PAGE_SIZE;
     int offset = rid % PAGE_SIZE;
-    assert(1 <= pageID && pageID < head.pageTot);
     auto index = BufPageManager::getInstance().getPage(fileID, pageID);
     auto page = BufPageManager::getInstance().access(index);
-    assert(getFooter(page, offset / head.recordByte));
     return page + offset;
 }
 
@@ -244,7 +235,7 @@ char *Table::select(RID_t rid, int col) {
             strcpy(buf, ptr + getColumnOffset(col));
             return buf;
         default:
-            assert(0);
+            break;
     }
 }
 
@@ -263,7 +254,6 @@ int Table::getFooter(char *page, int idx) {
 }
 
 void Table::createIndex(int col, char *name) {
-    assert((head.hasIndex & (1 << col)) == 0);
     if(name)
         strcpy(head.indexName[col], name);
     head.hasIndex |= 1 << col;
@@ -272,7 +262,6 @@ void Table::createIndex(int col, char *name) {
 void Table::dropIndex(char *name) {
     for(int col = 0; col<head.columnTot;col++){
         if(strcmp(head.indexName[col],name) == 0){
-            assert((head.hasIndex & (1 << col)));
             head.hasIndex &= ~(1 << col);
             colIndex[col].drop(permID, col);
         }
@@ -306,7 +295,7 @@ int Table::getFastCmp(RID_t rid, int col) {
             }
             break;
         default:
-            assert(false);
+            break;
     }
     delete[] p;
     return res;
@@ -350,7 +339,6 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
     for (int i = 0; i < head.columnTot; i++)    // 检查是否存在重复的列
         if (strcmp(head.columnName[i], name) == 0)
             return -1;
-    assert(head.columnTot < MAX_COLUMN_SIZE);
     int id = head.columnTot++;
     strcpy(head.columnName[id], name);
     head.columnType[id] = type;
@@ -398,10 +386,9 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
             }
             break;
         default:
-            assert(0);
+            break;
     }
-    assert(head.dataArrUsed <= MAX_DATA_SIZE);
-    assert(head.recordByte <= PAGE_SIZE);
+
     printf("--Added Column: %s\n", name);
     return id;
 }
@@ -430,14 +417,13 @@ bool Table::insert2Buffer(int col, const char *data){
             strcpy(buf + head.columnOffset[col], data);
             break;
         default:
-            assert(0);
+            break;
     }
     notNull |= (1u << col);
     return true;
 }
 
 bool Table::insert2Record(){
-    assert(buf != nullptr);
     if (head.nextAvail == (RID_t) -1) {
         allocPage();
     }
@@ -563,86 +549,7 @@ int Table::getColumnID(const char *name) {
 }
 
 char *Table::getColumnName(int col) {
-    assert(0 <= col && col < head.columnTot);
     return head.columnName[col];
-}
-
-int Table::addPrimary(const char *col, const char* pk_name) {
-    for (int i = 0; i < head.columnTot; i++) {
-        if (strcmp(head.columnName[i], col) == 0) {
-            setPrimary(i);
-            printf("--Set Primary Key Column %s", col);
-            if(pk_name!=nullptr){
-                printf(" Primary Key Name %s", pk_name);
-                strcpy(head.pkName[i],pk_name);
-            }
-            printf("\n");
-            return i;
-        }
-    }
-    return -1;
-}
-
-int Table::dropPrimary_byname(const char *pk_name) {
-    int dd = -1;
-    for (int i = 0; i < head.columnTot; i++) {
-        if (strcmp(head.pkName[i], pk_name) == 0) {
-            printf("--Drop Primary Key Column %s\n", head.columnName[i]);
-            head.isPrimary &= ~(1 << i);
-            --head.primaryCount;
-            dd = i;
-        }
-    }
-    if(dd == -1){
-        printf("[ERROR]Drop Error No Such Primary Key %s\n", pk_name);
-    }
-    return dd;
-}
-
-int Table::dropForeignByName(const char *fk_name){
-    int8_t fkt = head.foreignKeyTot;
-    bool fk_flag[fkt];
-    for (int8_t i = 0; i < fkt; i++) {
-        if (strcmp(head.foreignKeyList[i].name, fk_name) == 0)
-            fk_flag[i] = false;
-        else
-            fk_flag[i] = true;
-    }
-    head.foreignKeyTot = 0;
-    for (int8_t i = 0; i < fkt; i++) {
-        if (fk_flag[i]) {
-            head.foreignKeyList[head.foreignKeyTot] = head.foreignKeyList[i];
-            head.foreignKeyTot++;
-        }
-    }
-}
-
-void Table::dropPrimary() {
-    printf("--Drop ALL Primary Key Total %d\n", head.primaryCount);
-    head.isPrimary = 0;
-    head.primaryCount = 0;
-}
-
-void Table::setPrimary(int col) {
-    assert((head.notNull >> col) & 1);
-    head.isPrimary |= (1 << col);
-    head.hasIndex |= (1 << col);
-    ++head.primaryCount;
-}
-
-void Table::addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId, const char* fk_name) {
-    assert(head.foreignKeyTot < MAX_FOREIGN_KEY);
-    head.foreignKeyList[head.foreignKeyTot].col = col;
-    head.foreignKeyList[head.foreignKeyTot].foreign_table_id = foreignTableId;
-    head.foreignKeyList[head.foreignKeyTot].foreign_col = foreignColId;
-    if(fk_name != nullptr)
-        strcpy(head.foreignKeyList[head.foreignKeyTot].name, fk_name);
-    head.foreignKeyTot++;
-}
-
-void Table::dropForeign() {
-    printf("--Drop ALL Foreign Key Total %d\n", head.foreignKeyTot);
-    head.foreignKeyTot = 0;
 }
 
 void Table::initTempRecord() {
@@ -660,7 +567,7 @@ void Table::initTempRecord() {
                     strcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i]);
                     break;
                 default:
-                    assert(false);
+                    break;
             }
             notNull |= (1u << i);
         }
@@ -709,7 +616,7 @@ std::string Table::setTempRecord(int col, const char *data) {
             strcpy(buf + head.columnOffset[col], data);
             break;
         default:
-            assert(0);
+            break;
     }
     notNull |= (1u << col);
     return "";
@@ -719,7 +626,6 @@ std::string Table::setTempRecord(int col, const char *data) {
 // return "" if success.
 // return error description otherwise.
 std::string Table::insertTempRecord() {
-    assert(buf != nullptr);
     if (head.nextAvail == (RID_t) -1) {
         allocPage();
     }
@@ -742,67 +648,6 @@ std::string Table::insertTempRecord() {
     return "";
 }
 
-bool Table::isPrimary(int col) {
-    return (head.isPrimary & (1 << col)) != 0;
-}
-
-bool Table::checkPrimary() {
-    if (head.primaryCount == 1) return true;
-    int conflictCount = 0;
-    int firstPrimary = 1;
-    while (!isPrimary(firstPrimary)) {
-        ++firstPrimary;
-    }
-    auto equalFirstIndex = IndexKey(permID, -1, firstPrimary, getFastCmp(-1, firstPrimary),
-                                    getIsNull(-1, firstPrimary));
-    
-    auto rid = colIndex[firstPrimary].lowerBoundEqual(equalFirstIndex);
-    while (rid != -1) {
-        if (rid == *(int *) (buf + head.columnOffset[0])) {
-            // hit the record it self (when updating)
-            return true;
-        }
-        conflictCount = 1;
-        for (int col = firstPrimary + 1; col < head.columnTot; ++col) {
-            if (!isPrimary(col)) {
-                continue;
-            }
-            char *tmp;
-            //char *new_record = getRecordTempPtr();
-            switch (head.columnType[col]) {
-                case CT_INT:
-                case CT_DATE:
-                    tmp = select(rid, col);
-                    if (*(int *) tmp == *(int *) (buf + head.columnOffset[col])) {
-                        ++conflictCount;
-                    }
-                    free(tmp);
-                    break;
-                case CT_FLOAT:
-                    tmp = select(rid, col);
-                    if (*(float *) tmp == *(float *) (buf + head.columnOffset[col])) {
-                        ++conflictCount;
-                    }
-                    free(tmp);
-                    break;
-                case CT_VARCHAR:
-                    tmp = select(rid, col);
-                    if (strcmp(tmp, buf + head.columnOffset[col]) == 0) {
-                        ++conflictCount;
-                    }
-                    free(tmp);
-                    break;
-                default:
-                    assert(false);
-            }
-        }
-        if (conflictCount == head.primaryCount - 1) {
-            return false;
-        }
-        rid = colIndex[firstPrimary].nextEqual(equalFirstIndex);
-    }
-    return true;
-}
 
 void Table::clearBuffer() {
     if (buf == nullptr) {
@@ -829,19 +674,6 @@ void Table::resetBuffer(){
     }
 }
 
-std::string Table::checkForeignKeyConstraint() {
-    for (int i = 0; i < head.foreignKeyTot; ++i) {
-        auto check = head.foreignKeyList[i];
-        auto localData = (buf + head.columnOffset[check.col]);
-        auto dbms = DBMS::getInstance();
-        if (!dbms->valueExistInTable(localData, check)) {
-            return "[ERROR]Insert Error Value of column " + std::string(head.columnName[head.foreignKeyList[i].col])
-                   + " does not meet foreign key constraint\n";
-        }
-    }
-    return std::string();
-}
-
 void Table::printTableDef() {
     printf("---------------------\n");
     printf("ColumnTot %d \n", head.columnTot);
@@ -861,7 +693,7 @@ void Table::printTableDef() {
                 printf(" VARCHAR(%d)", head.columnLen[i]);
                 break;
             default:
-                assert(0);
+                break;
         }
         if (head.notNull & (1 << i)) printf(" NotNull");
         if (head.hasIndex & (1 << i)) printf(" Indexed");
@@ -881,7 +713,7 @@ std::string Table::checkRecord() {
         return "[ERROR]Insert Error Get Null in not Null Column\n";
     }
     if(!noCheck){
-        if (!checkPrimary()) {
+        if (!PrimaryKey::checkPrimary(this)) {
             return "[ERROR]Primary Key Conflict\n";
         }
         auto foreignKeyCheck = checkForeignKeyConstraint();
@@ -915,7 +747,6 @@ std::string Table::modifyRecordNull(RID_t rid, int col) {
     if (!err.empty()) {
         return err;
     }
-    assert(col != 0);
     setTempRecordNull(col);
     err = checkRecord();
     if (!err.empty()) {
@@ -941,7 +772,6 @@ std::string Table::modifyRecord(RID_t rid, int col, char *data) {
     if (!err.empty()) {
         return err;
     }
-    assert(col != 0);
     err = setTempRecord(col, data);
     if (!err.empty()) {
         return err;
@@ -961,7 +791,6 @@ RID_t Table::selectIndexLowerBound(int col, const char *data) {
     if (data == nullptr) {
         return selectIndexLowerBoundNull(col);
     }
-    assert(hasIndex(col));
     setTempRecord(col, data);
     return colIndex[col].lowerBound(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
 }
@@ -970,23 +799,19 @@ RID_t Table::selectIndexLowerBoundEqual(int col, const char *data) {
     if (data == nullptr) {
         return selectIndexLowerBoundNull(col);
     }
-    assert(hasIndex(col));
     setTempRecord(col, data);
     return colIndex[col].lowerBoundEqual(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
 }
 
 RID_t Table::selectIndexLowerBoundNull(int col) {
-    assert(hasIndex(col));
     return colIndex[col].begin();
 }
 
 RID_t Table::selectIndexNext(int col) {
-    assert(hasIndex(col));
     return colIndex[col].next();
 }
 
 RID_t Table::selectIndexNextEqual(int col) {
-    assert(hasIndex(col));
     return colIndex[col].nextEqual(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
 }
 
@@ -994,18 +819,15 @@ RID_t Table::selectIndexUpperBound(int col, const char *data) {
     if (data == nullptr) {
         return selectIndexUpperBoundNull(col);
     }
-    assert(hasIndex(col));
     setTempRecord(col, data);
     return colIndex[col].upperBound(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
 }
 
 RID_t Table::selectIndexUpperBoundNull(int col) {
-    assert(hasIndex(col));
     return colIndex[col].end();
 }
 
 RID_t Table::selectReveredIndexNext(int col) {
-    assert(hasIndex(col));
     return colIndex[col].reversedNext();
 }
 
@@ -1034,7 +856,6 @@ void Table::changeColumn(const char *name, struct column_defs *col_def){
             type = CT_DATE;
             break;
         default:
-            assert(0==1);
             break;
     }
     head.columnType[id] = type;
@@ -1069,7 +890,7 @@ void Table::changeColumn(const char *name, struct column_defs *col_def){
             strcpy(head.dataArr + head.columnOffset[id], col_def->flags->default_value->literal_s);
             break;
         default:
-            assert(0);
+            break;
     }
     int diff = size - head.columnLen[id];
     head.recordByte += diff;
@@ -1088,4 +909,17 @@ void Table::changeColumn(const char *name, struct column_defs *col_def){
             memcpy(head.dataArr+head.defaultOffset[i], temp_dataArr + head.defaultOffset[i]-diff, size);
         }
     }
+}
+
+std::string Table::checkForeignKeyConstraint(){
+    for (int i = 0; i < this->head.foreignKeyTot; ++i) {
+        auto check = this->head.foreignKeyList[i];
+        auto localData = (this->buf + this->head.columnOffset[check.col]);
+        auto dbms = DBMS::getInstance();
+        if (!dbms->valueExistInTable(localData, check)) {
+            return "[ERROR]Insert Error Value of column " + std::string(this->head.columnName[this->head.foreignKeyList[i].col])
+                + " does not meet foreign key constraint\n";
+        }
+    }
+    return std::string();
 }

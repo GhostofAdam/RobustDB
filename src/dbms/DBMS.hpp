@@ -1,4 +1,6 @@
-#include "Database.hpp"
+#ifndef __DBMS_HPP__
+#define __DBMS_HPP__
+#include "../database/Database.hpp"
 
 enum IDX_TYPE {
     IDX_NONE, IDX_LOWWER, IDX_UPPER, IDX_EQUAL
@@ -25,7 +27,7 @@ public:
     void changeColumn(const char *tb_name, const char *col, struct column_defs *col_def);
     void addPrimary(const char *table, const char *col);
     void dropPrimary(const char *table);
-    void dropPrimary_byname(const char *table, const char *col);
+    void dropPrimaryByName(const char *table, const char *col);
     void dropForeignByName(const char *table, const char *fk_name);
     bool addConstraint(const char *table, const char *cons_name, table_constraint *cons);
     void dropForeign(const char *table);
@@ -60,3 +62,4 @@ private:
     void updateColumnCache(const char *col_name, const char *table, const expr_node &v);
     void cleanColumnCacheByTable(const char *table);
 };
+#endif

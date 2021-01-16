@@ -19,7 +19,6 @@ string Database::getDBName() {
 }
 
 void Database::open(const string &name) {
-    assert(!this->ready);
     this->dbName = name;
     ifstream fin((name + ".db").c_str());
     int tableSize;
@@ -35,7 +34,6 @@ void Database::open(const string &name) {
 }
 
 void Database::close() {
-    assert(this->ready);
     FILE *file = fopen((this->dbName + ".db").c_str(), "w");
     int tableSize = this->table.size();
     fprintf(file, "%zu\n", tableSize);
@@ -53,7 +51,6 @@ void Database::close() {
 }
 
 void Database::drop() {
-    assert(this->ready);
     remove((this->dbName + ".db").c_str());
     for (size_t i = 0; i < this->table.size(); i++) {
         this->table[i]->drop();
@@ -67,15 +64,12 @@ void Database::drop() {
 
 void Database::create(const string &name) {
     auto file = fopen((name + ".db").c_str(), "w");
-    assert(file);
     fclose(file);
-    assert(this->ready == 0);
     this->ready = true;
     this->dbName = name;
 }
 
 Table *Database::createTable(const std::string &name) {
-    assert(ready);
     tableName.push_back(name);
     table.push_back(new Table());
     table.back()->create((dbName + "." + name + ".table").c_str());
@@ -135,7 +129,7 @@ bool Database::setPrimaryKey(Table* tab, const char* column_name){
         return false;
     }
     tab->createIndex(t);
-    tab->setPrimary(t);
+    PrimaryKey::setPrimary(tab, t);
     return true;
 }
 
@@ -169,7 +163,7 @@ bool Database::setForeignKey(Table* tab, const char* column_name, const char* fo
         return false;
     }
     printf("--Add Foreign Key Error: Column %s Foreign Table %s Foreign Column Name %s \n",column_name, foreign_table_name,foreign_column_name);
-    tab->addForeignKeyConstraint(t, (int) foreign_table->permID, foreign_col);
+    ForeignerKey::addForeignKeyConstraint(tab, t, (int) foreign_table->permID, foreign_col);
     return true;
 }
 void Database::renameTable(const char *old_table, const char *new_table){

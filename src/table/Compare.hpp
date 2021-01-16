@@ -8,7 +8,7 @@
 #ifndef PARSER_H_
 #define PARSER_H_
 
-#include "common.hpp"
+#include "../utils/common.hpp"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -83,7 +83,7 @@ class Compare{
             case OP_LT:
                 return x < y;
             default:
-                assert(0);
+                break;
         }
     }
 
@@ -100,7 +100,7 @@ class Compare{
             case OP_LT:
                 return x < y;
             default:
-                assert(0);
+                break;
         }
     }
 
@@ -117,7 +117,7 @@ class Compare{
             case OP_LT:
                 return strcmp(x, y) < 0;
             default:
-                assert(0);
+                break;
         }
     }
 
@@ -158,7 +158,7 @@ class Compare{
             case OP_LT:
                 return "<";
             default:
-                assert(0);
+                break;
         }
     }
 };

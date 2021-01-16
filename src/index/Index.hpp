@@ -1,6 +1,8 @@
-#include "common.hpp"
+#ifndef __INDEX_HPP__
+#define __INDEX_HPP__
+#include "../utils/common.hpp"
 #include "../stx/btree_set.hpp"
-#include "../backend/RegisterManager.hpp"
+#include "../bufmanager/RegisterManager.hpp"
 
 class IndexKey {
     int rid;    // record id
@@ -48,3 +50,4 @@ public:
     int nextEqual(const IndexKey &key);     // 若迭代器下一个元素等于key,返回rid;否则返回-1
     int reversedNext();     // 迭代器的前一个元素,不存在返回-1
 };
+#endif

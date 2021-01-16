@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include "Execute.h"
 
-#include "../backend/DBMS.hpp"
+#include "../dbms/DBMS.hpp"
 
 void free_expr(expr_node* node){
     
@@ -135,7 +135,7 @@ void execute_use_db(const char *db_name) {
 
 void execute_insert_row(struct insert_argu *stmt) {
     printf("--Insert Rows to Table %s\n", stmt->table);
-    assert(stmt->table);
+
     DBMS::getInstance()->insertRow(stmt->table, stmt->columns, stmt->values);
     free_column_list(stmt->columns);
     free_values(stmt->values);
@@ -213,7 +213,7 @@ void execute_add_constraint(const char *tb_name, const char *cons_name, table_co
 
 void execute_drop_primary_key_byname(const char *tb_name, const char *pk_name) {
     printf("--Drop Primary Key\n");
-    DBMS::getInstance()->dropPrimary_byname(tb_name, pk_name);
+    DBMS::getInstance()->dropPrimaryByName(tb_name, pk_name);
     free((void *) tb_name);
     free((void *) pk_name);
 }

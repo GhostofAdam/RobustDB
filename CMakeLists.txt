@@ -7,10 +7,10 @@ set(CMAKE_BINARY_DIR build)
 set(EXECUTABLE_OUTPUT_PATH bin)
 set(SOURCE
 	${SOURCE}
-	src/backend/Database.cpp
-    src/backend/DBMS.cpp
-    src/backend/Index.cpp
-    src/backend/Table.cpp
+	src/database/Database.cpp
+    src/dbms/DBMS.cpp
+    src/index/Index.cpp
+    src/table/Table.cpp
 )
 
 set(HEADERS

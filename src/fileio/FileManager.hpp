@@ -53,58 +53,46 @@ class FileManager {
 public:
     void writePage(int fileID, int pageID, char *buf) {
         
-        assert(0 <= fileID && fileID < MAX_FILE_NUM && isOpen[fileID]);
         int file = fileList[fileID];
         off_t offset = pageID;
         offset <<= PAGE_IDX;
         int res = lseek(file , offset, SEEK_SET);
-        assert(res == offset);
         res = write(file , (void *) buf, PAGE_SIZE);
-        assert(res == PAGE_SIZE);
     }
 
     void readPage(int fileID, int pageID, char *buf) {
-        assert(0 <= fileID && fileID < MAX_FILE_NUM && isOpen[fileID]);
         int file = fileList[fileID];
         off_t offset = pageID;
         offset <<= PAGE_IDX;
         int res = lseek(file , offset, SEEK_SET);
-        assert(res == offset);
         res = read(file , (void *) buf, PAGE_SIZE);
-        assert(res == PAGE_SIZE);
     }
 
     void createFile(const char *name) {
         FILE *file = fopen(name, "a+");
-        assert(file);
         fclose(file);
         permID[name] = nextID++;
     }
 
     void closeFile(int fileID) {
-        assert(isOpen[fileID]);
         isOpen[fileID] = 0;
         int file = fileList[fileID];
         perm2temp.erase(filePermID[fileID]);
         int res = close(file);
-        assert(res == 0);
         idStack[idStackTop++] = fileID;
     }
 
     int openFile(const char *name) {
-        assert(idStackTop);
         int fileID = idStack[--idStackTop];
         isOpen[fileID] = 1;
         filePermID[fileID] = permID[name];
         perm2temp[filePermID[fileID]] = fileID;
         int file = open(name, O_RDWR);
-        assert(file != -1);
         fileList[fileID] = file;
         return fileID;
     }
 
     int getFilePermID(int fileID) {
-        assert(isOpen[fileID]);
         return filePermID[fileID];
     }
 

@@ -1,4 +1,4 @@
-#include "common.hpp"
+#include "../utils/common.hpp"
 
 class Table;
 
@@ -16,15 +16,12 @@ public:
         return instance;
     }
     void checkIn(int permID, Table *table) {
-        assert(list.find(permID) == list.end());
         list[permID] = table;
     }
     void checkOut(int permID) {
-        assert(list.count(permID) > 0);
         list.erase(permID);
     }
     Table *getPtr(int permID) {
-        assert(list.find(permID) == list.end());
         return list[permID];
     }
 }; 

@@ -1,4 +1,6 @@
-#include "common.hpp"
+#ifndef __TABLE_HPP__
+#define __TABLE_HPP__
+#include "../utils/common.hpp"
 #include "../index/Index.hpp"
 #include "Compare.hpp"
 #include "../bufmanager/BufPageManager.hpp"
@@ -36,6 +38,9 @@ struct TableHead {
 };
 class Table{
     friend class Database;
+    friend class ForeignerKey;
+    friend class PrimaryKey;
+    friend class CRUD;
 private:
     TableHead head;
     
@@ -68,13 +73,6 @@ public:
     int renameColumn(const char *old_col, const char *new_col);
     int getColumnID(const char *name);
     char *getColumnName(int col);
-    int addPrimary(const char *col, const char* pk_name = nullptr);
-    int dropPrimary_byname(const char *col);
-    int dropForeignByName(const char *col);
-    void dropPrimary();
-    void setPrimary(int col);
-    void addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId, const char* fk_name = nullptr);
-    void dropForeign();
     int getColumnCount(){return head.columnTot;}
     int getFastCmp(RID_t rid, int col);
     bool getIsNull(RID_t rid, int col);
@@ -99,9 +97,6 @@ public:
     std::string loadRecordToTemp(RID_t rid, char *page, int offset);
     std::string modifyRecordNull(RID_t rid, int col);
     std::string modifyRecord(RID_t rid, int col, char *data);
-    bool isPrimary(int col);
-    bool checkPrimary();
-    std::string checkForeignKeyConstraint();
     RID_t selectIndexLowerBoundEqual(int col, const char *data);
     RID_t selectIndexLowerBound(int col, const char *data);
     RID_t selectIndexLowerBoundNull(int col);
@@ -110,6 +105,8 @@ public:
     RID_t selectIndexUpperBound(int col, const char *data);
     RID_t selectIndexUpperBoundNull(int col);
     RID_t selectReveredIndexNext(int col);
+    std::string checkForeignKeyConstraint();
     string tableName;
 
 };
+#endif

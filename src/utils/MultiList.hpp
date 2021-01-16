@@ -34,7 +34,6 @@ public:
     }
 
     void erase(int index) {
-        assert(0 <= index && index < cap);
         if (a[index].prev == index) {
             return;
         }
@@ -44,8 +43,6 @@ public:
     }
 
     void insert(int listID, int ele) {
-        assert(0 <= ele && ele < cap);
-        assert(0 <= listID && listID < listNum);
         erase(ele);
         int node = listID + cap;
         int prev = a[node].prev;
@@ -54,8 +51,6 @@ public:
     }
 
     void insertFirst(int listID, int ele) {
-        assert(0 <= ele && ele < cap);
-        assert(0 <= listID && listID < listNum);
         erase(ele);
         int node = listID + cap;
         int next = a[node].next;
@@ -64,17 +59,14 @@ public:
     }
 
     int getFirst(int listID) {
-        assert(0 <= listID && listID < listNum);
         return a[listID + cap].next;
     }
 
     int next(int index) {
-        assert(0 <= index && index <= cap + listNum);
         return a[index].next;
     }
 
     bool isHead(int index) {
-        assert(0 <= index && index <= cap + listNum);
         if (index < cap) {
             return false;
         } else {
@@ -83,7 +75,6 @@ public:
     }
 
     bool isAlone(int index) {
-        assert(0 <= index && index <= cap + listNum);
         return (a[index].next == index);
     }
 };

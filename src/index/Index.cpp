@@ -27,12 +27,12 @@ void Index::drop(int tab, int col) {
 }
 
 void Index::erase(const IndexKey &key) {
-    assert(this->list.erase(key) == 1);
+    this->list.erase(key);
 }
 
 void Index::insert(const IndexKey &key) {
-    assert(this->list.find(key) == this->list.end());
-    this->list.insert(key);
+    if(this->list.find(key) == this->list.end())
+        this->list.insert(key);
 }
 
 int Index::begin() {

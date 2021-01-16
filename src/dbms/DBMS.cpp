@@ -37,7 +37,6 @@ expr_node DBMS::dbTypeToExprType(char *data, ColumnType type) {
             break;
         default:
             printf("[ERROR]Unhandled Data Type\n");
-            assert(0);
     }
     return v;
 }
@@ -106,7 +105,6 @@ char *DBMS::ExprTypeToDbType(const expr_node *val, term_type desiredType) {
             break;
         default:
             printf("[ERROR]Unhandled Data Type\n");
-            assert(false);
     }
     return ret;
 }
@@ -158,7 +156,6 @@ void DBMS::createTable(const table_def *table) {
         return;
     }
         
-    assert(table->name != NULL);
     const char *name = (const char *) table->name;
     if (current->getTableByName(name)) {
         printf("[ERROR]Table %s already exists\n", table->name);
@@ -189,7 +186,6 @@ void DBMS::createTable(const table_def *table) {
                 type = CT_DATE;
                 break;
             default:
-                assert(0==1);
                 break;
         }
         column = (*i);
@@ -312,7 +308,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
                         printf(" %s ",buf);
                         break;
                     default:
-                        assert(0);
+                        break;
                 }
             }
             printf("\n");
@@ -328,7 +324,6 @@ bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
     if(condition->node){
         auto cnt = column_cache.count(string(condition->node->column->column));
         if (!cnt){
-            assert(0);
             return false;
         }
         expr_node ret;
@@ -430,7 +425,6 @@ bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
             }
         }
         else {
-            assert(0);
         }
         printf("[ERROR]Wrong Record Type\n");
         return false;
@@ -439,11 +433,9 @@ bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
     
     bool right, left;
     if(condition->left){
-        assert(condition->node==nullptr);
         left = checkCondition(rid, condition->right);
     }
     if(condition->right){
-        assert(condition->node==nullptr);
         right = checkCondition(rid, condition->right);
     }
     if(condition->op == OPER_AND){
@@ -454,7 +446,6 @@ bool DBMS::checkCondition(RID_t rid, condition_tree *condition){
     }
     else{
         printf("[ERROR]Wrong Condition Tree!\n");
-        assert(0);
         return false;
     }
 }
@@ -734,7 +725,8 @@ void DBMS::addPrimary(const char *table, const char *col) {
         printf("[ERROR]Table %s not found\n", table);
         return;
     }
-    int id = tb->addPrimary(col);
+
+    int id = PrimaryKey::addPrimary(tb, col);
     if (id == -1) {
         printf("[ERROR]Column %s doesn't exist\n", col);
     }
@@ -750,10 +742,10 @@ void DBMS::dropPrimary(const char *table) {
         printf("[ERROR]Table %s not found\n", table);
         return;
     }
-    tb->dropPrimary();
+    PrimaryKey::dropPrimary(tb);
 }
 
-void DBMS::dropPrimary_byname(const char *table, const char *col) {
+void DBMS::dropPrimaryByName(const char *table, const char *col) {
     Table *tb;
     if (!current->isOpen()) {
         printf("[ERROR]Current Database is not open!\n");
@@ -763,7 +755,7 @@ void DBMS::dropPrimary_byname(const char *table, const char *col) {
         printf("[ERROR]Table %s not found\n", table);
         return;
     }
-    int id = tb->dropPrimary_byname(col);
+    int id = PrimaryKey::dropPrimaryByName(tb, col);
     if (id == -1) {
         printf("[ERROR]Column %s doesn't exist\n", col);
     }
@@ -783,7 +775,7 @@ bool DBMS::addConstraint(const char *table, const char *cons_name, table_constra
         linked_list* column_list = cons->column_list;
         for (; column_list; column_list = column_list->next) {
             auto *column = (column_ref*) column_list->data;
-            tb->addPrimary(column->column, cons_name);
+            PrimaryKey::addPrimary(tb, column->column, cons_name);
         }
     }
     else if(cons->type == CONSTRAINT_FOREIGN_KEY){
@@ -799,7 +791,7 @@ bool DBMS::addConstraint(const char *table, const char *cons_name, table_constra
             auto *f_column = (column_ref*) f_column_list->data;
             int col_id = tb->getColumnID(column->column);
             int foreign_col_id = tb_cons->getColumnID(f_column->column);
-            tb->addForeignKeyConstraint(col_id, foreign_table_id, foreign_col_id, cons_name);
+            ForeignerKey::addForeignKeyConstraint(tb, col_id, foreign_table_id, foreign_col_id, cons_name);
         }
     }
     else{
@@ -819,7 +811,7 @@ void DBMS::dropForeign(const char *table) {
         printf("[ERROR]Table %s not found\n", table);
         return;
     }
-    tb->dropForeign();
+    ForeignerKey::dropForeign(tb);
 }
 
 void DBMS::createIndex(index_argu *idx_stmt) {
@@ -889,7 +881,7 @@ void DBMS::dropForeignByName(const char *table, const char *fk_name){
         printf("[ERROR]Table name %s not found\n", table);
         return;
     }
-    tb->dropForeignByName(fk_name);
+    ForeignerKey::dropForeignByName(tb, fk_name);
 }
 void DBMS::renameTable(const char *old_table, const char *new_table){
     if (!current->isOpen()){

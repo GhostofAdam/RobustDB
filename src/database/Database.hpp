@@ -1,4 +1,9 @@
-#include "Table.hpp"
+#ifndef __DATABASE_HPP__
+#define __DATABASE_HPP__
+#include "../table/Table.hpp"
+#include "../table/CRUD.hpp"
+#include "../table/ForeignerKey.hpp"
+#include "../table/PrimaryKey.hpp"
 
 enum {
     EXCEPTION_NONE,
@@ -36,3 +41,4 @@ private:
     vector<string> tableName;
     vector<Table*> table;
 };
+#endif
