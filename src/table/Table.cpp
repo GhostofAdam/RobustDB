@@ -2,6 +2,7 @@
 #include "CRUD.hpp"
 #include "PrimaryKey.hpp"
 #include "ForeignerKey.hpp"
+#include "TableIndex.hpp"
 #include "../dbms/DBMS.hpp"
 class DBMS;
 bool operator<(const IndexKey &a, IndexKey &b) {
@@ -113,11 +114,11 @@ void Table::open(const char* tableName) {
     this->buf = nullptr;
     for (auto &col: this->colIndex)
         col.clear();
-    loadIndex();    // 加载各列信息
+    TableIndex::loadIndex(this);    // 加载各列信息
 }
 
 void Table::close() {
-    storeIndex();
+    TableIndex::storeIndex(this);
     int index = BufPageManager::getInstance().getPage(fileID, 0);
     memcpy(BufPageManager::getInstance().access(index), &(this->head), sizeof(this->head));
 
@@ -133,29 +134,11 @@ void Table::close() {
 }
 
 void Table::drop() {
-    dropIndex();    // 删除所有列
+    TableIndex::dropIndex(this);    // 删除所有列
     RegisterManager::getInstance().checkOut(permID);
     BufPageManager::getInstance().closeFile(fileID, false);
     BufPageManager::getFileManager().closeFile(fileID);
     this->ready = false;
-}
-
-void Table::loadIndex() {
-    for (int i = 0; i < head.columnTot; i++)
-        if (head.hasIndex & (1 << i))   // bitmap
-            colIndex[i].load(permID, i);    // 从文件加载对应列
-}
-
-void Table::storeIndex() {
-    for (int i = 0; i < head.columnTot; i++)
-        if (head.hasIndex & (1 << i)) 
-            colIndex[i].store(permID, i);
-}
-
-void Table::dropIndex() {
-    for (int i = 0; i < head.columnTot; i++)
-        if (head.hasIndex & (1 << i))
-            colIndex[i].drop(permID, i);
 }
 
 void Table::allocPage() {
@@ -173,32 +156,6 @@ void Table::allocPage() {
     head.pageTot++;
 }
 
-RID_t Table::getNext(RID_t rid) {
-    int page_id, id, n;
-    n = (PAGE_SIZE - PAGE_FOOTER_SIZE) / head.recordByte;
-    n = (n < MAX_REC_PER_PAGE) ? n : MAX_REC_PER_PAGE;
-    if (rid == (RID_t) -1) {
-        page_id = 0;
-        id = n - 1;
-    } else {
-        page_id = rid / PAGE_SIZE;
-        id = (rid % PAGE_SIZE) / head.recordByte;
-    }
-    int index = BufPageManager::getInstance().getPage(fileID, page_id);
-    char *page =    BufPageManager::getInstance().access(index);
-
-    while (true) {
-        id++;
-        if (id == n) {
-            page_id++;
-            if (page_id >= head.pageTot) return (RID_t) -1;
-            index = BufPageManager::getInstance().getPage(fileID, page_id);
-            page = BufPageManager::getInstance().access(index);
-            id = 0;
-        }
-        if (getFooter(page, id)) return (RID_t) page_id * PAGE_SIZE + id * head.recordByte;
-    }
-}
 
 std::string Table::getTableName() {
     return tableName;
@@ -253,21 +210,6 @@ int Table::getFooter(char *page, int idx) {
     return (tmp >> v) & 1;
 }
 
-void Table::createIndex(int col, char *name) {
-    if(name)
-        strcpy(head.indexName[col], name);
-    head.hasIndex |= 1 << col;
-}
-
-void Table::dropIndex(char *name) {
-    for(int col = 0; col<head.columnTot;col++){
-        if(strcmp(head.indexName[col],name) == 0){
-            head.hasIndex &= ~(1 << col);
-            colIndex[col].drop(permID, col);
-        }
-    }
-}
-
 int Table::getFastCmp(RID_t rid, int col) {
     char *p = select(rid, col);
     if (p == nullptr) return 0;
@@ -307,23 +249,11 @@ bool Table::getIsNull(RID_t rid, int col) {
     return p == nullptr;
 }
 
-void Table::eraseColIndex(RID_t rid, int col) {
-    if (hasIndex(col)) {
-        colIndex[col].erase(IndexKey(permID, rid, col, getFastCmp(rid, col), getIsNull(rid, col)));
-    }
-}
-
-void Table::insertColIndex(RID_t rid, int col) {
-    if (hasIndex(col)) {
-        colIndex[col].insert(IndexKey(permID, rid, col, getFastCmp(rid, col), getIsNull(rid, col)));
-    }
-}
-
 void Table::dropRecord(RID_t rid) {
     int pageID = rid / PAGE_SIZE;
     int offset = rid % PAGE_SIZE;
     for (int i = 0; i < head.columnTot; i++) {
-        if (head.hasIndex & (1 << i)) eraseColIndex(rid, i);
+        if (head.hasIndex & (1 << i)) TableIndex::eraseColIndex(this, rid, i);
     }
     int index = BufPageManager::getInstance().getPage(fileID, pageID);
     char *page = (char*)BufPageManager::getInstance().access(index);
@@ -443,7 +373,7 @@ bool Table::insert2Record(){
     memcpy(page + offset, buf, head.recordByte);
     BufPageManager::getInstance().markDirty(index);
     inverseFooter(page, offset / head.recordByte);
-    for (int i = 0; i < head.columnTot; i++) insertColIndex(rid, i);
+    for (int i = 0; i < head.columnTot; i++) TableIndex::insertColIndex(this, rid, i);
     return true;
 }
     
@@ -644,7 +574,7 @@ std::string Table::insertTempRecord() {
     memcpy(page + offset, buf, head.recordByte);
     BufPageManager::getInstance().markDirty(index);
     inverseFooter(page, offset / head.recordByte);
-    for (int i = 0; i < head.columnTot; i++) insertColIndex(rid, i);
+    for (int i = 0; i < head.columnTot; i++) TableIndex::insertColIndex(this, rid, i);
     return "";
 }
 
@@ -752,10 +682,10 @@ std::string Table::modifyRecordNull(RID_t rid, int col) {
     if (!err.empty()) {
         return err;
     }
-    eraseColIndex(rid, col);
+    TableIndex::eraseColIndex(this, rid, col);
     memcpy(record, buf, head.recordByte);
     BufPageManager::getInstance().markDirty(index);
-    insertColIndex(rid, col);
+    TableIndex::insertColIndex(this, rid, col);
     return "";
 }
 
@@ -780,55 +710,11 @@ std::string Table::modifyRecord(RID_t rid, int col, char *data) {
     if (!err.empty()) {
         return err;
     }
-    eraseColIndex(rid, col);
+    TableIndex::eraseColIndex(this, rid, col);
     memcpy(record, buf, head.recordByte);
     BufPageManager::getInstance().markDirty(index);
-    insertColIndex(rid, col);
+    TableIndex::insertColIndex(this, rid, col);
     return "";
-}
-
-RID_t Table::selectIndexLowerBound(int col, const char *data) {
-    if (data == nullptr) {
-        return selectIndexLowerBoundNull(col);
-    }
-    setTempRecord(col, data);
-    return colIndex[col].lowerBound(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
-}
-
-RID_t Table::selectIndexLowerBoundEqual(int col, const char *data) {
-    if (data == nullptr) {
-        return selectIndexLowerBoundNull(col);
-    }
-    setTempRecord(col, data);
-    return colIndex[col].lowerBoundEqual(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
-}
-
-RID_t Table::selectIndexLowerBoundNull(int col) {
-    return colIndex[col].begin();
-}
-
-RID_t Table::selectIndexNext(int col) {
-    return colIndex[col].next();
-}
-
-RID_t Table::selectIndexNextEqual(int col) {
-    return colIndex[col].nextEqual(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
-}
-
-RID_t Table::selectIndexUpperBound(int col, const char *data) {
-    if (data == nullptr) {
-        return selectIndexUpperBoundNull(col);
-    }
-    setTempRecord(col, data);
-    return colIndex[col].upperBound(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
-}
-
-RID_t Table::selectIndexUpperBoundNull(int col) {
-    return colIndex[col].end();
-}
-
-RID_t Table::selectReveredIndexNext(int col) {
-    return colIndex[col].reversedNext();
 }
 
 void Table::changeColumn(const char *name, struct column_defs *col_def){

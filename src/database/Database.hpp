@@ -4,6 +4,7 @@
 #include "../table/CRUD.hpp"
 #include "../table/ForeignerKey.hpp"
 #include "../table/PrimaryKey.hpp"
+#include "../table/TableIndex.hpp"
 
 enum {
     EXCEPTION_NONE,

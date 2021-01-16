@@ -128,7 +128,7 @@ bool Database::setPrimaryKey(Table* tab, const char* column_name){
         printf("[ERROR]Add Primary Key Error: Column %s does not exist\n", column_name);
         return false;
     }
-    tab->createIndex(t);
+    TableIndex::createIndex(tab, t);
     PrimaryKey::setPrimary(tab, t);
     return true;
 }

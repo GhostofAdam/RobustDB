@@ -40,7 +40,7 @@ class Table{
     friend class Database;
     friend class ForeignerKey;
     friend class PrimaryKey;
-    friend class CRUD;
+    friend class TableIndex;
 private:
     TableHead head;
     
@@ -52,9 +52,6 @@ private:
     void open(const char* tableName);
     void close();
     void drop();
-    void loadIndex();
-    void storeIndex();
-    void dropIndex();
     
 public:
     Table();
@@ -76,17 +73,14 @@ public:
     int getColumnCount(){return head.columnTot;}
     int getFastCmp(RID_t rid, int col);
     bool getIsNull(RID_t rid, int col);
-    void eraseColIndex(RID_t rid, int col);
-    void insertColIndex(RID_t rid, int col);
+    bool hasIndex(int col){return (head.hasIndex & (1 << col)) != 0;}
     void dropRecord(RID_t rid);
     void printTableDef();
     bool insert2Buffer(int col, const char *data);
     bool insert2Record();
     void clearBuffer();
     void resetBuffer();
-    void createIndex(int col, char *name = nullptr);
-    void dropIndex(char *name);
-    bool hasIndex(int col){return (head.hasIndex & (1 << col)) != 0;}
+    
     void initTempRecord();
     void clearTempRecord();
     void setTempRecordNull(int col);
@@ -97,14 +91,7 @@ public:
     std::string loadRecordToTemp(RID_t rid, char *page, int offset);
     std::string modifyRecordNull(RID_t rid, int col);
     std::string modifyRecord(RID_t rid, int col, char *data);
-    RID_t selectIndexLowerBoundEqual(int col, const char *data);
-    RID_t selectIndexLowerBound(int col, const char *data);
-    RID_t selectIndexLowerBoundNull(int col);
-    RID_t selectIndexNext(int col);
-    RID_t selectIndexNextEqual(int col);
-    RID_t selectIndexUpperBound(int col, const char *data);
-    RID_t selectIndexUpperBoundNull(int col);
-    RID_t selectReveredIndexNext(int col);
+    
     std::string checkForeignKeyConstraint();
     string tableName;
 

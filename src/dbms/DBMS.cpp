@@ -483,7 +483,7 @@ std::vector<RID_t> DBMS::selectRidfromTable(Table* tb, condition_tree *condition
     int col;
     IDX_TYPE idx = checkIndexAvailability(tb, &rid, &rid_u, &col, condition);
     if (idx == IDX_NONE)
-        rid = tb->getNext((unsigned int) -1);
+        rid = TableIndex::getNext(tb, (unsigned int) -1);
     for (; rid != (RID_t) -1; rid = nextWithIndex(tb, idx, col, rid, rid_u)) {
         cacheColumns(tb, rid);
         if (condition) {
@@ -526,22 +526,22 @@ DBMS::IDX_TYPE DBMS::checkIndexAvailability(Table *tb, RID_t *rid_l, RID_t *rid_
     if (type != IDX_NONE) {
         *col = c;
         auto colType = ColumnTypeToExprType(tb->getColumnType(c));
-        *rid_u = tb->selectIndexUpperBound(c, ExprTypeToDbType(v, colType));
-        *rid_l = tb->selectIndexLowerBound(c, ExprTypeToDbType(v, colType));
+        *rid_u = TableIndex::selectIndexUpperBound(tb, c, ExprTypeToDbType(v, colType));
+        *rid_l = TableIndex::selectIndexLowerBound(tb, c, ExprTypeToDbType(v, colType));
     }
     return type;
 }
 
 RID_t DBMS::nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t rid_u) {
     if (type == IDX_EQUAL) {
-        auto nxt = tb->selectIndexNext(col);
+        auto nxt = TableIndex::selectIndexNext(tb, col);
         return rid == rid_u ? (RID_t) -1 : nxt; // current rid equals upper bound
     } else if (type == IDX_UPPER)
-        return tb->selectReveredIndexNext(col);
+        return TableIndex::selectReveredIndexNext(tb, col);
     else if (type == IDX_LOWWER)
-        return tb->selectIndexNext(col);
+        return TableIndex::selectIndexNext(tb, col);
     else {
-        return tb->getNext(rid);
+        return TableIndex::getNext(tb, rid);
     }
 }
 
@@ -832,7 +832,7 @@ void DBMS::createIndex(index_argu *idx_stmt) {
             printf("[ERROR]Column %s not exist\n", column);
         } else{
             printf("--Create Index %s on Column %s\n", idx_stmt->index_name, column);
-            tb->createIndex(t,idx_stmt->index_name);
+            TableIndex::createIndex(tb, t,idx_stmt->index_name);
         }
     }
 }
@@ -847,7 +847,7 @@ void DBMS::dropIndex(index_argu *idx_stmt) {
         printf("[ERROR]Table %s not found\n", idx_stmt->table);
         return;
     }
-    tb->dropIndex(idx_stmt->index_name);
+    TableIndex::dropIndex(tb, idx_stmt->index_name);
 }
 
 void DBMS::descTable(const char *name) {
@@ -866,7 +866,7 @@ void DBMS::descTable(const char *name) {
 
 bool DBMS::valueExistInTable(const char *value, const ForeignKey &key) {
     auto table = current->getTableById(key.foreign_table_id);
-    auto result = table->selectIndexLowerBoundEqual(key.foreign_col, value);
+    auto result = TableIndex::selectIndexLowerBoundEqual(table, key.foreign_col, value);
     return result != (RID_t) -1;
 }
 void DBMS::dropForeignByName(const char *table, const char *fk_name){
