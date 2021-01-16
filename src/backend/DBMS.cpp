@@ -283,22 +283,22 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         std::cout<<tb->tableName<<std::endl;
         auto results = selectRidfromTable(tb, condition);
         printf("--Selected %ld rows from Table %s\n", results.size(), tb->tableName.c_str());
-        for(RID_t t:results){
+        for (RID_t t: results) {
+            col_vec.clear();
             printf("[RECORD]RID %u:", t);
-            if(!column_expr){
-                for(int i=1;i<tb->getColumnCount();i++){
+            if (!column_expr) {
+                for(int i = 1; i < tb->getColumnCount(); i++){
                     col_vec.push_back(i);
                 }
             }
             for (const linked_list *j = column_expr; j; j = j->next) {
                 auto column = (column_ref *) j->data;
-                if(column->table==nullptr || 
-                (column->table&&current->getTableByName(column->table)==tb)){
+                if(column->table == nullptr || (column->table && current->getTableByName(column->table) == tb)){
                         int col = tb->getColumnID(column->column);
                         col_vec.push_back(col);
                 }
             }
-            for(auto col: col_vec){
+            for (auto col: col_vec) {
                 char* buf = tb->select(t, col);
                 switch (tb->getColumnType(col)) {
                     case CT_INT:
@@ -317,8 +317,6 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
             }
             printf("\n");
         }
-    
-    
     }
 
     freeCachedColumns();

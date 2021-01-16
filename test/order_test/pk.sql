@@ -9,7 +9,7 @@ CREATE TABLE customer(
 
 DESC customer;
 INSERT INTO customer VALUES (0,'a','b'),(1,'a','b'),(2,'a','b'),(3,'a','b');
-INSERT INTO customer VALUES (0, 'c', 'd');
+INSERT INTO customer VALUES (0,'c','d');
 SELECT * FROM customer WHERE name = 'A';
 
 ALTER TABLE customer DROP PRIMARY KEY;
