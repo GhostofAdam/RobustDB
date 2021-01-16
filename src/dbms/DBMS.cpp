@@ -883,6 +883,172 @@ void DBMS::RecordCount(index_argu *idx_stmt, string s, vector<string>& words){
         }
     }
 }
+
+int DBMS::dropTableColumn(const char *name) {
+    int id = -1;
+    for (int i = 0; i < head.columnTot; i++) {
+        if (strcmp(head.columnName[i], name) == 0)
+            id = i;
+    }
+    if (id == -1){
+        printf("[ERROR]Drop Column Error Column does not exits\n");
+        return -1;
+    }
+
+    unsigned int notNull_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.notNull >> i) & 0x1)
+                notNull_new |= (1 << i);
+        }
+        else {
+            if ((head.notNull >> (i + 1)) & 0x1)
+                notNull_new |= (1 << i);
+        }
+    }
+    head.notNull = notNull_new;
+
+    unsigned int hasIndex_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.hasIndex >> i) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+        else {
+            if ((head.hasIndex >> (i + 1)) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+    }
+    head.hasIndex = hasIndex_new;
+
+    if ((head.isPrimary >> id) & 0x1) {
+        head.primaryCount--;
+    }
+    unsigned int isPrimary_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.isPrimary >> i) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+        else {
+            if ((head.isPrimary >> (i + 1)) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+    }
+    head.isPrimary = isPrimary_new;
+
+    int8_t fkt = head.foreignKeyTot;
+    bool fk_flag[fkt];
+    for (int8_t i = 0; i < fkt; i++) {
+        if (head.foreignKeyList[i].col == id)
+            fk_flag[i] = false;
+        else
+            fk_flag[i] = true;
+    }
+    head.foreignKeyTot = 0;
+    for (int8_t i = 0; i < fkt; i++) {
+        if (fk_flag[i]) {
+            head.foreignKeyList[head.foreignKeyTot] = head.foreignKeyList[i];
+            head.foreignKeyTot++;
+        }
+    }
+
+    for (int i = id; i < head.columnTot - 1; i++) {
+        strcpy(head.columnName[i], head.columnName[i + 1]);
+        head.columnOffset[i] = head.columnOffset[i + 1];
+        head.columnType[i] = head.columnType[i + 1];
+        head.columnLen[i] = head.columnLen[i + 1];
+        head.defaultOffset[i] = head.defaultOffset[i + 1];
+        strcpy(head.pkName[i], head.pkName[i + 1]);
+    }
+    head.columnTot--;
+    printf("--Dropped column %s\n", name);
+    return id;
+}
+int DBMS::checkTableColumn(const char *name){
+    if(name!)
+        return -1;
+    int id = -1;
+    for (int i = 0; i < head.columnTot; i++) {
+        if (strcmp(head.columnName[i], name) == 0)
+            id = i;
+    }
+    if (id == -1){
+        printf("[ERROR]Drop Column Error Column does not exits\n");
+        return -1;
+    }
+
+    unsigned int notNull_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.notNull >> i) & 0x1)
+                notNull_new |= (1 << i);
+        }
+        else {
+            if ((head.notNull >> (i + 1)) & 0x1)
+                notNull_new |= (1 << i);
+        }
+    }
+    head.notNull = notNull_new;
+
+    unsigned int hasIndex_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.hasIndex >> i) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+        else {
+            if ((head.hasIndex >> (i + 1)) & 0x1)
+                hasIndex_new |= (1 << i);
+        }
+    }
+    head.hasIndex = hasIndex_new;
+
+    if ((head.isPrimary >> id) & 0x1) {
+        head.primaryCount--;
+    }
+    unsigned int isPrimary_new = 0;
+    for (int i = 0; i < head.columnTot - 1; i++) {
+        if (i < id) {
+            if ((head.isPrimary >> i) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+        else {
+            if ((head.isPrimary >> (i + 1)) & 0x1)
+                isPrimary_new |= (1 << i);
+        }
+    }
+    head.isPrimary = isPrimary_new;
+
+    int8_t fkt = head.foreignKeyTot;
+    bool fk_flag[fkt];
+    for (int8_t i = 0; i < fkt; i++) {
+        if (head.foreignKeyList[i].col == id)
+            fk_flag[i] = false;
+        else
+            fk_flag[i] = true;
+    }
+    head.foreignKeyTot = 0;
+    for (int8_t i = 0; i < fkt; i++) {
+        if (fk_flag[i]) {
+            head.foreignKeyList[head.foreignKeyTot] = head.foreignKeyList[i];
+            head.foreignKeyTot++;
+        }
+    }
+
+    for (int i = id; i < head.columnTot - 1; i++) {
+        strcpy(head.columnName[i], head.columnName[i + 1]);
+        head.columnOffset[i] = head.columnOffset[i + 1];
+        head.columnType[i] = head.columnType[i + 1];
+        head.columnLen[i] = head.columnLen[i + 1];
+        head.defaultOffset[i] = head.defaultOffset[i + 1];
+        strcpy(head.pkName[i], head.pkName[i + 1]);
+    }
+    head.columnTot--;
+    printf("--Dropped column %s\n", name);
+    return id;
+}
+
 ListNode* DBMS::visitTableLists(vector<ListNode*>& lists){
     const int size = lists.size();
 

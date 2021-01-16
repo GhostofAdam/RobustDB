@@ -40,7 +40,8 @@ public:
     ListNode* mergeTableLists(vector<ListNode*>& lists);
     ListNode* visitTableLists(vector<ListNode*>& lists);
     void RecordCount(index_argu *idx_stmt, string s, vector<string>& words);
-
+    int checkTableColumn(const char *name);
+    int dropTableColumn(const char *name);
 private:
         enum IDX_TYPE {
         IDX_NONE, IDX_LOWWER, IDX_UPPER, IDX_EQUAL
@@ -49,7 +50,6 @@ private:
     DBMS();
     std::vector<char *> pendingFree;
     std::multimap<std::string, table_value_t> column_cache;
-    void printReadableException(int err);
     expr_node dbTypeToExprType(char *data, ColumnType type);
     char *ExprTypeToDbType(const expr_node *val, term_type desiredType);
     term_type ColumnTypeToExprType(const ColumnType& type);
