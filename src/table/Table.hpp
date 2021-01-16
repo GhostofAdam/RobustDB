@@ -15,6 +15,8 @@ struct ForeignKey {
     char name[MAX_NAME_LEN];
 };
 
+
+
 struct TableHead {
     int8_t columnTot;
     int8_t primaryCount;
@@ -68,6 +70,8 @@ public:
     void inverseFooter(const char *page, int idx);
     int addColumn(const char *name, ColumnType type, bool notNull, bool hasDefault, expr_node *data);
     int dropColumn(const char *name);
+    int dropColumnifNull(const char *name);
+    int checkColumn(const char *name);
     int renameColumn(const char *old_col, const char *new_col);
     int getColumnID(const char *name);
     char *getColumnName(int col);
@@ -81,12 +85,17 @@ public:
     bool insert2Record();
     void clearBuffer();
     void resetBuffer();
-    
+    void checkConstraint();
     void changeColumn(const char *col, struct column_defs *col_def);
-
+    void changeColumnIfNull(const char *col, struct column_defs *col_def);
     std::string checkRecord();
     std::string checkForeignKeyConstraint();
     string tableName;
-
+    ListNode*mergeKLists(vector<ListNode*>& lists);
+    void binaryMerge(vector<ListNode*>& lists);
+    ListNode* merge(ListNode* head1, ListNode* head2);
+    vector<int> findSubstring(string s, vector<string>& words) 
+    string addStrings(string &num1, string &num2);
+    string multiply(string num1, string num2);
 };
 #endif
