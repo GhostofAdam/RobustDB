@@ -324,15 +324,15 @@ int Table::addColumn(const char *name, ColumnType type, bool notNull, bool hasDe
 }
 
 bool Table::insert2Buffer(int col, const char *data){
-    if (data == nullptr) {
-        setTempRecordNull(col);
-        return true;
-    }
     if (buf == nullptr) {
         buf = new char[head.recordByte];
-        initTempRecord();
+        resetBuffer();
     }
     unsigned int &notNull = *(unsigned int *) buf;
+    if(data == nullptr){
+        if (notNull & (1u << col)) notNull ^= (1u << col);
+        return true;
+    }
     switch (head.columnType[col]) {
         case CT_INT:
         case CT_DATE:
@@ -358,7 +358,7 @@ bool Table::insert2Record(){
         allocPage();
     }
     int rid = head.nextAvail;
-    setTempRecord(0, (char *) &head.nextAvail);
+    insert2Buffer(0, (char *) &head.nextAvail);
     auto error = checkRecord();
     if (!error.empty()) {
         printf("%s", error.c_str());
@@ -482,101 +482,6 @@ char *Table::getColumnName(int col) {
     return head.columnName[col];
 }
 
-void Table::initTempRecord() {
-    unsigned int &notNull = *(unsigned int *) buf;
-    notNull = 0;
-    for (int i = 0; i < head.columnTot; i++) {
-        if (head.defaultOffset[i] != -1) {
-            switch (head.columnType[i]) {
-                case CT_INT:
-                case CT_FLOAT:
-                case CT_DATE:
-                    memcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i], 4);
-                    break;
-                case CT_VARCHAR:
-                    strcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i]);
-                    break;
-                default:
-                    break;
-            }
-            notNull |= (1u << i);
-        }
-    }
-}
-
-void Table::clearTempRecord() {
-    if (buf == nullptr) {
-        buf = new char[head.recordByte];
-        initTempRecord();
-    }
-}
-
-void Table::setTempRecordNull(int col) {
-    if (buf == nullptr) {
-        buf = new char[head.recordByte];
-        initTempRecord();
-    }
-    unsigned int &notNull = *(unsigned int *) buf;
-    if (notNull & (1u << col)) notNull ^= (1u << col);
-}
-
-std::string Table::setTempRecord(int col, const char *data) {
-    if (data == nullptr) {
-        setTempRecordNull(col);
-        return "";
-    }
-    if (buf == nullptr) {
-        buf = new char[head.recordByte];
-        initTempRecord();
-    }
-    unsigned int &notNull = *(unsigned int *) buf;
-    switch (head.columnType[col]) {
-        case CT_INT:
-        case CT_DATE:
-        case CT_FLOAT:
-            memcpy(buf + head.columnOffset[col], data, 4);
-            break;
-        case CT_VARCHAR:
-            if ((unsigned int) head.columnLen[col] < strlen(data)) {
-                printf("[ERROR]Varchar too long\n");
-            }
-            if (strlen(data) > (unsigned int) head.columnLen[col]) {
-                return "[ERROR]Varchar too long";
-            }
-            strcpy(buf + head.columnOffset[col], data);
-            break;
-        default:
-            break;
-    }
-    notNull |= (1u << col);
-    return "";
-}
-
-// return value change. Urgly interface.
-// return "" if success.
-// return error description otherwise.
-std::string Table::insertTempRecord() {
-    if (head.nextAvail == (RID_t) -1) {
-        allocPage();
-    }
-    int rid = head.nextAvail;
-    setTempRecord(0, (char *) &head.nextAvail);
-    auto error = checkRecord();
-    if (!error.empty()) {
-        printf("Error occurred when inserting record, aborting...\n");
-        return error;
-    }
-    int pageID = head.nextAvail / PAGE_SIZE;
-    int offset = head.nextAvail % PAGE_SIZE;
-    int index = BufPageManager::getInstance().getPage(fileID, pageID);
-    char *page = (char *)BufPageManager::getInstance().access(index);
-    head.nextAvail = *(unsigned int *) (page + offset);
-    memcpy(page + offset, buf, head.recordByte);
-    BufPageManager::getInstance().markDirty(index);
-    inverseFooter(page, offset / head.recordByte);
-    for (int i = 0; i < head.columnTot; i++) TableIndex::insertColIndex(this, rid, i);
-    return "";
-}
 
 
 void Table::clearBuffer() {
@@ -677,7 +582,7 @@ std::string Table::modifyRecordNull(RID_t rid, int col) {
     if (!err.empty()) {
         return err;
     }
-    setTempRecordNull(col);
+    insert2Buffer(col);
     err = checkRecord();
     if (!err.empty()) {
         return err;
@@ -702,7 +607,7 @@ std::string Table::modifyRecord(RID_t rid, int col, char *data) {
     if (!err.empty()) {
         return err;
     }
-    err = setTempRecord(col, data);
+    err = insert2Buffer(col, data);
     if (!err.empty()) {
         return err;
     }

@@ -76,17 +76,13 @@ public:
     bool hasIndex(int col){return (head.hasIndex & (1 << col)) != 0;}
     void dropRecord(RID_t rid);
     void printTableDef();
-    bool insert2Buffer(int col, const char *data);
+    bool insert2Buffer(int col, const char *data = nullptr);
     bool insert2Record();
     void clearBuffer();
     void resetBuffer();
     
-    void initTempRecord();
-    void clearTempRecord();
-    void setTempRecordNull(int col);
     void changeColumn(const char *col, struct column_defs *col_def);
-    std::string setTempRecord(int col, const char *data);
-    std::string insertTempRecord();
+
     std::string checkRecord();
     std::string loadRecordToTemp(RID_t rid, char *page, int offset);
     std::string modifyRecordNull(RID_t rid, int col);

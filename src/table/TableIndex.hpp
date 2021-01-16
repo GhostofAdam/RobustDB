@@ -49,14 +49,14 @@ public:
         if (data == nullptr) {
             return selectIndexLowerBoundNull(tb, col);
         }
-        tb->setTempRecord(col, data);
+        tb->insert2Buffer(col, data);
         return tb->colIndex[col].lowerBoundEqual(IndexKey(tb->permID, -1, col, tb->getFastCmp(-1, col), tb->getIsNull(-1, col)));
     }
     static RID_t selectIndexLowerBound(Table* tb, int col, const char *data){
         if (data == nullptr) {
             return selectIndexLowerBoundNull(tb, col);
         }
-        tb->setTempRecord(col, data);
+        tb->insert2Buffer(col, data);
         return tb->colIndex[col].lowerBound(IndexKey(tb->permID, -1, col, tb->getFastCmp(-1, col), tb->getIsNull(-1, col)));
     }
     static RID_t selectIndexLowerBoundNull(Table* tb, int col){
@@ -72,7 +72,7 @@ public:
         if (data == nullptr) {
             return selectIndexUpperBoundNull(tb, col);
         }
-        tb->setTempRecord(col, data);
+        tb->insert2Buffer(col, data);
         return tb->colIndex[col].upperBound(IndexKey(tb->permID, -1, col, tb->getFastCmp(-1, col), tb->getIsNull(-1, col)));
     }
     static RID_t selectIndexUpperBoundNull(Table* tb, int col){
